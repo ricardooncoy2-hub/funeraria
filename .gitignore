@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# env files (keep example files)
+.env
+.env.*
+!.env.example
+!**/.env.example
+!.env.*.example
+
+# build output
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# testing / coverage
+coverage/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+*.pem
+
+# vercel (not used, but ignore if generated locally)
+.vercel

@@ -1,0 +1,25 @@
+{
+  "name": "funeraria-minaya",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.30.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter=\"./apps/*\" run dev",
+    "build": "pnpm -r --filter=\"./apps/*\" run build",
+    "lint": "pnpm -r --filter=\"./apps/*\" run lint",
+    "typecheck": "pnpm -r --filter=\"./apps/*\" run typecheck",
+    "test": "pnpm --filter @funeraria-minaya/api run test",
+    "test:unit": "pnpm --filter @funeraria-minaya/api run test",
+    "test:integration": "pnpm --filter @funeraria-minaya/api run test:e2e",
+    "format": "prettier --write \"apps/**/*.{ts,tsx}\" \"packages/**/*.ts\""
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.7",
+    "prettier": "^3.4.2",
+    "prisma": "6.19.3",
+    "typescript": "^5.9.3"
+  }
+}

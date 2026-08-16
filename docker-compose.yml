@@ -1,0 +1,58 @@
+# Despliegue de SERVIDOR (staging/producción). NO usar para desarrollo local
+# (ver docs/26_infraestructura.md §26.10 y docs/27_docker.md). En local: MariaDB
+# y Node nativos + `pnpm dev`.
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certs:/etc/nginx/certs:ro
+    depends_on: [web, admin, api]
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    env_file: .env.web
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    env_file: .env.admin
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env.api
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mariadb:
+    image: mariadb:11.8
+    env_file: .env.mariadb
+    # Collation obligatoria del proyecto (ADR-002 / docs/11): NO utf8mb4_0900_ai_ci.
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_uca1400_ai_ci
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    # NO exponer el puerto de MariaDB al host en producción.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mariadb_data:
+  certs:

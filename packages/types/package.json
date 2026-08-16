@@ -1,0 +1,14 @@
+{
+  "name": "@funeraria-minaya/types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tipos y DTOs compartidos entre apps/api, apps/web y apps/admin.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
