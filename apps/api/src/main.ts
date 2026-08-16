@@ -1,3 +1,4 @@
+import './common/bigint-json.polyfill';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
@@ -7,11 +8,6 @@ import { AppModule } from './app.module';
 
 const API_PREFIX = 'api/v1';
 const DOCS_PATH = `${API_PREFIX}/docs`;
-
-// Prisma usa BigInt para los IDs; JSON.stringify no lo serializa por defecto.
-(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function (this: bigint) {
-  return this.toString();
-};
 
 function parseCorsOrigins(raw: string | undefined): string[] {
   if (!raw) {

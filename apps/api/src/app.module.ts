@@ -13,10 +13,14 @@ import { AuthzModule } from './modules/authz/authz.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { HealthModule } from './modules/health/health.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { InventoryTransfersModule } from './modules/inventory-transfers/inventory-transfers.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { ProductsModule } from './modules/products/products.module';
+import { PurchasesModule } from './modules/purchases/purchases.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { ServicesModule } from './modules/services/services.module';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -50,6 +54,10 @@ import { PrismaModule } from './prisma/prisma.module';
     ProductsModule,
     ServicesModule,
     PlansModule,
+    SuppliersModule,
+    InventoryModule,
+    PurchasesModule,
+    InventoryTransfersModule,
     HealthModule,
   ],
   providers: [

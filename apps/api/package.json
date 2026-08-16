@@ -81,6 +81,9 @@
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
+    "setupFiles": [
+      "<rootDir>/common/bigint-json.polyfill.ts"
+    ],
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },

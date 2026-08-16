@@ -53,6 +53,11 @@ model Branch {
 
   userBranches   UserBranch[]
   branchServices BranchService[]
+  inventories    Inventory[]
+  movements      InventoryMovement[]
+  purchases      Purchase[]
+  transfersOut   InventoryTransfer[] @relation("TransferOrigin")
+  transfersIn    InventoryTransfer[] @relation("TransferDestination")
 
   @@unique([isMainFlag])
   @@map("sedes")
@@ -120,9 +125,15 @@ model User {
   updatedAt          DateTime  @updatedAt @map("updated_at")
   deletedAt          DateTime? @map("deleted_at")
 
-  userRoles     UserRole[]
-  userBranches  UserBranch[]
-  refreshTokens RefreshToken[]
+  userRoles          UserRole[]
+  userBranches       UserBranch[]
+  refreshTokens      RefreshToken[]
+  movements          InventoryMovement[]
+  purchases          Purchase[]
+  transfersRequested InventoryTransfer[] @relation("TransferRequestedBy")
+  transfersApproved  InventoryTransfer[] @relation("TransferApprovedBy")
+  transfersSent      InventoryTransfer[] @relation("TransferSentBy")
+  transfersReceived  InventoryTransfer[] @relation("TransferReceivedBy")
 
   @@map("usuarios")
 }
@@ -205,8 +216,12 @@ model Product {
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
 
-  categoria ProductCategory @relation(fields: [categoriaProductoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  planItems PlanItem[]
+  categoria     ProductCategory         @relation(fields: [categoriaProductoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  planItems     PlanItem[]
+  inventories   Inventory[]
+  movements     InventoryMovement[]
+  purchaseItems PurchaseItem[]
+  transferItems InventoryTransferItem[]
 
   @@map("productos")
 }
@@ -314,4 +329,163 @@ model PaymentMethod {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@map("metodos_pago")
+}
+
+/// 10.5 — Proveedores (RF-035)
+model Supplier {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  tipoDocumento   String    @map("tipo_documento") @db.VarChar(10)
+  numeroDocumento String    @map("numero_documento") @db.VarChar(20)
+  razonSocial     String    @map("razon_social") @db.VarChar(200)
+  nombreComercial String?   @map("nombre_comercial") @db.VarChar(200)
+  telefono        String?   @db.VarChar(30)
+  correo          String?   @db.VarChar(150)
+  direccion       String?   @db.VarChar(255)
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  purchases Purchase[]
+
+  @@unique([tipoDocumento, numeroDocumento])
+  @@map("proveedores")
+}
+
+/// 10.6 — Inventario por sede (RB-002, ADR-008)
+model Inventory {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  sedeId        BigInt   @map("sede_id") @db.UnsignedBigInt
+  productoId    BigInt   @map("producto_id") @db.UnsignedBigInt
+  stockActual   Decimal  @default(0) @map("stock_actual") @db.Decimal(12, 3)
+  stockMinimo   Decimal  @default(0) @map("stock_minimo") @db.Decimal(12, 3)
+  stockMaximo   Decimal? @map("stock_maximo") @db.Decimal(12, 3)
+  costoPromedio Decimal  @default(0) @map("costo_promedio") @db.Decimal(12, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  branch   Branch  @relation(fields: [sedeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  producto Product @relation(fields: [productoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([sedeId, productoId])
+  @@map("inventarios")
+}
+
+/// 10.6 — Kardex: fuente de verdad histórica del stock (RF-042/043)
+model InventoryMovement {
+  id             BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  sedeId         BigInt   @map("sede_id") @db.UnsignedBigInt
+  productoId     BigInt   @map("producto_id") @db.UnsignedBigInt
+  tipo           String   @db.VarChar(24)
+  cantidad       Decimal  @db.Decimal(12, 3)
+  costoUnitario  Decimal? @map("costo_unitario") @db.Decimal(12, 2)
+  stockAnterior  Decimal  @map("stock_anterior") @db.Decimal(12, 3)
+  stockPosterior Decimal  @map("stock_posterior") @db.Decimal(12, 3)
+  documentoTipo  String?  @map("documento_tipo") @db.VarChar(24)
+  documentoId    BigInt?  @map("documento_id") @db.UnsignedBigInt
+  motivo         String?  @db.VarChar(255)
+  usuarioId      BigInt   @map("usuario_id") @db.UnsignedBigInt
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  branch   Branch  @relation(fields: [sedeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  producto Product @relation(fields: [productoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  usuario  User    @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([sedeId, productoId, createdAt])
+  @@index([documentoTipo, documentoId])
+  @@index([tipo])
+  @@map("movimientos_inventario")
+}
+
+/// 10.7 — Compras centralizadas (RB-001, ADR-007)
+model Purchase {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  sedeId          BigInt    @map("sede_id") @db.UnsignedBigInt
+  proveedorId     BigInt    @map("proveedor_id") @db.UnsignedBigInt
+  numeroDocumento String?   @map("numero_documento") @db.VarChar(40)
+  fecha           DateTime  @db.Date
+  subtotal        Decimal   @default(0) @db.Decimal(12, 2)
+  igv             Decimal   @default(0) @db.Decimal(12, 2)
+  total           Decimal   @default(0) @db.Decimal(12, 2)
+  estado          String    @default("BORRADOR") @db.VarChar(16)
+  usuarioId       BigInt    @map("usuario_id") @db.UnsignedBigInt
+  observaciones   String?   @db.VarChar(500)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  branch    Branch         @relation(fields: [sedeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  proveedor Supplier       @relation(fields: [proveedorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  usuario   User           @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items     PurchaseItem[]
+
+  @@map("compras")
+}
+
+/// 10.7 — detalle_compra
+model PurchaseItem {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  compraId      BigInt   @map("compra_id") @db.UnsignedBigInt
+  productoId    BigInt   @map("producto_id") @db.UnsignedBigInt
+  cantidad      Decimal  @db.Decimal(12, 3)
+  costoUnitario Decimal  @map("costo_unitario") @db.Decimal(12, 2)
+  subtotal      Decimal  @db.Decimal(12, 2)
+  afectoIgv     Boolean  @default(true) @map("afecto_igv")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  purchase Purchase @relation(fields: [compraId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  producto Product  @relation(fields: [productoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([compraId])
+  @@map("detalle_compra")
+}
+
+/// 10.8 — Transferencias entre sedes (ADR-013)
+model InventoryTransfer {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  codigo            String    @unique @db.VarChar(30)
+  sedeOrigenId      BigInt    @map("sede_origen_id") @db.UnsignedBigInt
+  sedeDestinoId     BigInt    @map("sede_destino_id") @db.UnsignedBigInt
+  estado            String    @default("SOLICITADA") @db.VarChar(16)
+  motivo            String?   @db.VarChar(255)
+  usuarioSolicitaId BigInt    @map("usuario_solicita_id") @db.UnsignedBigInt
+  usuarioApruebaId  BigInt?   @map("usuario_aprueba_id") @db.UnsignedBigInt
+  usuarioEnviaId    BigInt?   @map("usuario_envia_id") @db.UnsignedBigInt
+  usuarioRecibeId   BigInt?   @map("usuario_recibe_id") @db.UnsignedBigInt
+  fechaSolicitud    DateTime? @map("fecha_solicitud")
+  fechaEnvio        DateTime? @map("fecha_envio")
+  fechaRecepcion    DateTime? @map("fecha_recepcion")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  sedeOrigen      Branch                  @relation("TransferOrigin", fields: [sedeOrigenId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sedeDestino     Branch                  @relation("TransferDestination", fields: [sedeDestinoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  usuarioSolicita User                    @relation("TransferRequestedBy", fields: [usuarioSolicitaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  usuarioAprueba  User?                   @relation("TransferApprovedBy", fields: [usuarioApruebaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  usuarioEnvia    User?                   @relation("TransferSentBy", fields: [usuarioEnviaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  usuarioRecibe   User?                   @relation("TransferReceivedBy", fields: [usuarioRecibeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items           InventoryTransferItem[]
+
+  @@map("transferencias_inventario")
+}
+
+/// 10.8 — detalle_transferencia_inventario. costoUnitario: snapshot del costo
+/// promedio de origen al enviar, para aplicarlo en destino al recibir
+/// (docs/19 §19.2: "se guarda en el detalle o en el movimiento").
+model InventoryTransferItem {
+  id                        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  transferenciaInventarioId BigInt   @map("transferencia_inventario_id") @db.UnsignedBigInt
+  productoId                BigInt   @map("producto_id") @db.UnsignedBigInt
+  cantidad                  Decimal  @db.Decimal(12, 3)
+  costoUnitario             Decimal? @map("costo_unitario") @db.Decimal(12, 2)
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  transfer InventoryTransfer @relation(fields: [transferenciaInventarioId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  producto Product           @relation(fields: [productoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([transferenciaInventarioId])
+  @@map("detalle_transferencia_inventario")
 }
