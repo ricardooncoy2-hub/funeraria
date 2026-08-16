@@ -15,10 +15,13 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { HealthModule } from './modules/health/health.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { InventoryTransfersModule } from './modules/inventory-transfers/inventory-transfers.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { ProductsModule } from './modules/products/products.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
+import { QuotationsModule } from './modules/quotations/quotations.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { SalesModule } from './modules/sales/sales.module';
 import { ServicesModule } from './modules/services/services.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { UsersModule } from './modules/users/users.module';
@@ -58,6 +61,9 @@ import { PrismaModule } from './prisma/prisma.module';
     InventoryModule,
     PurchasesModule,
     InventoryTransfersModule,
+    SalesModule,
+    PaymentsModule,
+    QuotationsModule,
     HealthModule,
   ],
   providers: [

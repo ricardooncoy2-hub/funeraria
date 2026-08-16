@@ -1,0 +1,247 @@
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import {
+  PaginatedResult,
+  PaginationQueryDto,
+  paginate,
+} from '../../common/dto/pagination-query.dto';
+import { PrismaService } from '../../prisma/prisma.service';
+import { AuthenticatedUser } from '../authz/authz.types';
+import { SedeScopeService } from '../authz/sede-scope.service';
+import { CreateDestinoPagoDto } from './dto/create-destino-pago.dto';
+import { CreatePaymentDto } from './dto/create-payment.dto';
+import { UpdateDestinoPagoDto } from './dto/update-destino-pago.dto';
+import { VoidPaymentDto } from './dto/void-payment.dto';
+
+function financingStateFor(monto: Prisma.Decimal, cobrado: Prisma.Decimal): string {
+  if (cobrado.gte(monto)) return 'PAGADA';
+  if (cobrado.gt(0)) return 'PARCIALMENTE_PAGADA';
+  return 'PENDIENTE';
+}
+
+@Injectable()
+export class PaymentsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sedeScopeService: SedeScopeService,
+  ) {}
+
+  // --- Destinos de pago ---
+
+  findAllDestinos() {
+    return this.prisma.destinoPago.findMany({
+      where: { isActive: true },
+      orderBy: { nombre: 'asc' },
+    });
+  }
+
+  createDestino(dto: CreateDestinoPagoDto) {
+    return this.prisma.destinoPago.create({
+      data: {
+        tipo: dto.tipo,
+        nombre: dto.nombre,
+        sedeAdministradoraId: dto.sedeAdministradoraId
+          ? BigInt(dto.sedeAdministradoraId)
+          : undefined,
+        numeroReferencia: dto.numeroReferencia,
+      },
+    });
+  }
+
+  async updateDestino(id: bigint, dto: UpdateDestinoPagoDto) {
+    await this.assertDestinoExists(id);
+    return this.prisma.destinoPago.update({
+      where: { id },
+      data: {
+        tipo: dto.tipo,
+        nombre: dto.nombre,
+        sedeAdministradoraId: dto.sedeAdministradoraId
+          ? BigInt(dto.sedeAdministradoraId)
+          : undefined,
+        numeroReferencia: dto.numeroReferencia,
+        isActive: dto.isActive,
+      },
+    });
+  }
+
+  // --- Pagos ---
+
+  async findAll(
+    user: AuthenticatedUser,
+    query: PaginationQueryDto,
+  ): Promise<PaginatedResult<unknown>> {
+    const sedeIds = await this.sedeScopeService.authorizedSedeIds(user);
+    const where: Prisma.PaymentWhereInput = { sedeCobroId: { in: sedeIds }, deletedAt: null };
+
+    const [data, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        where,
+        include: {
+          metodoPago: { select: { id: true, codigo: true } },
+          destinoPago: { select: { id: true, tipo: true, nombre: true } },
+        },
+        orderBy: { fecha: 'desc' },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.payment.count({ where }),
+    ]);
+
+    return paginate(data, total, query.page, query.pageSize);
+  }
+
+  async findOne(user: AuthenticatedUser, id: bigint) {
+    const payment = await this.prisma.payment.findFirst({ where: { id, deletedAt: null } });
+    if (!payment)
+      throw new NotFoundException({ code: 'PAGO_NO_ENCONTRADO', message: 'Pago no encontrado.' });
+    this.sedeScopeService.assertSedeAccess(user, payment.sedeCobroId);
+    return payment;
+  }
+
+  /** docs/22 §22.3: valida financiamiento/saldo (RB-022) y coherencia método↔destino (RB-027). */
+  async create(user: AuthenticatedUser, dto: CreatePaymentDto) {
+    const sedeCobroId = BigInt(dto.sedeCobroId);
+    this.sedeScopeService.assertSedeAccess(user, sedeCobroId);
+
+    const financing = await this.prisma.financing.findFirst({
+      where: { id: BigInt(dto.financiamientoId), deletedAt: null },
+    });
+    if (!financing)
+      throw new NotFoundException({
+        code: 'FINANCIAMIENTO_NO_ENCONTRADO',
+        message: 'Financiamiento no encontrado.',
+      });
+    if (financing.estado === 'CANCELADA') {
+      throw new ConflictException({
+        code: 'FINANCIAMIENTO_CANCELADO',
+        message: 'El financiamiento está cancelado.',
+      });
+    }
+
+    const metodo = await this.prisma.paymentMethod.findFirst({
+      where: { id: BigInt(dto.metodoPagoId), isActive: true },
+    });
+    if (!metodo)
+      throw new NotFoundException({
+        code: 'METODO_PAGO_NO_ENCONTRADO',
+        message: 'Método de pago no encontrado.',
+      });
+
+    const destino = await this.prisma.destinoPago.findFirst({
+      where: { id: BigInt(dto.destinoPagoId), isActive: true },
+    });
+    if (!destino)
+      throw new NotFoundException({
+        code: 'DESTINO_PAGO_NO_ENCONTRADO',
+        message: 'Destino de pago no encontrado.',
+      });
+
+    // RB-027: coherencia método <-> destino. La exigencia de caja ABIERTA
+    // (RB-008/026) llega en Fase 5 junto con el módulo `cash`.
+    if (metodo.esEfectivo && destino.tipo !== 'CAJA') {
+      throw new BadRequestException({
+        code: 'DESTINO_INCOHERENTE',
+        message: 'Un pago en efectivo requiere un destino de tipo CAJA.',
+      });
+    }
+    if (!metodo.esEfectivo && destino.tipo === 'CAJA') {
+      throw new BadRequestException({
+        code: 'DESTINO_INCOHERENTE',
+        message: 'Un pago electrónico no puede usar un destino de tipo CAJA.',
+      });
+    }
+
+    const monto = new Prisma.Decimal(dto.monto);
+    const cobradoPrevio = await this.sumConfirmedPayments(financing.id);
+    if (cobradoPrevio.add(monto).gt(financing.monto)) {
+      throw new ConflictException({
+        code: 'MONTO_EXCEDE_FINANCIAMIENTO',
+        message: `El pago excede el saldo del financiamiento (pendiente: ${financing.monto.sub(cobradoPrevio).toString()}).`,
+      });
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.create({
+        data: {
+          financiamientoId: financing.id,
+          ventaId: financing.ventaId,
+          monto,
+          metodoPagoId: metodo.id,
+          destinoPagoId: destino.id,
+          sedeCobroId,
+          estado: 'CONFIRMADO',
+          referencia: dto.referencia,
+          usuarioId: user.id,
+        },
+      });
+
+      const nuevoCobrado = cobradoPrevio.add(monto);
+      await tx.financing.update({
+        where: { id: financing.id },
+        data: { estado: financingStateFor(financing.monto, nuevoCobrado) },
+      });
+
+      return payment;
+    });
+  }
+
+  /** docs/22 §22.5 */
+  async anular(user: AuthenticatedUser, id: bigint, dto: VoidPaymentDto) {
+    const payment = await this.findOne(user, id);
+    if (payment.estado !== 'CONFIRMADO') {
+      throw new ConflictException({
+        code: 'PAGO_NO_ANULABLE',
+        message: 'Solo un pago CONFIRMADO puede anularse.',
+      });
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const voided = await tx.payment.update({
+        where: { id },
+        data: {
+          estado: 'ANULADO',
+          anuladoMotivo: dto.motivo,
+          anuladoPor: user.id,
+          anuladoAt: new Date(),
+        },
+      });
+
+      const financing = await tx.financing.findUniqueOrThrow({
+        where: { id: payment.financiamientoId },
+      });
+      const cobrado = await this.sumConfirmedPayments(financing.id, tx);
+      await tx.financing.update({
+        where: { id: financing.id },
+        data: { estado: financingStateFor(financing.monto, cobrado) },
+      });
+
+      return voided;
+    });
+  }
+
+  private async sumConfirmedPayments(
+    financiamientoId: bigint,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Prisma.Decimal> {
+    const client = tx ?? this.prisma;
+    const result = await client.payment.aggregate({
+      where: { financiamientoId, estado: 'CONFIRMADO' },
+      _sum: { monto: true },
+    });
+    return result._sum.monto ?? new Prisma.Decimal(0);
+  }
+
+  private async assertDestinoExists(id: bigint): Promise<void> {
+    const exists = await this.prisma.destinoPago.findUnique({ where: { id } });
+    if (!exists)
+      throw new NotFoundException({
+        code: 'DESTINO_PAGO_NO_ENCONTRADO',
+        message: 'Destino de pago no encontrado.',
+      });
+  }
+}
