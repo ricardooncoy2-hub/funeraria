@@ -651,9 +651,28 @@ model ContractedService {
   @@map("servicios_contratados")
 }
 
-/// 10.10 — Financiamiento (ADR-010). financiadorId sin FK todavía: el catálogo
-/// `financiadores` se construye en Fase 4; hasta entonces origenTipo siempre
-/// es 'CLIENTE' y financiadorId queda NULL.
+/// 10.5 — Financiadores (RB-012): SIS, EsSalud, aseguradoras, etc. — nunca
+/// métodos de pago (ADR-012).
+model Financiador {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  tipo            String    @db.VarChar(20)
+  nombre          String    @db.VarChar(200)
+  tipoDocumento   String?   @map("tipo_documento") @db.VarChar(10)
+  numeroDocumento String?   @map("numero_documento") @db.VarChar(20)
+  telefono        String?   @db.VarChar(30)
+  correo          String?   @db.VarChar(150)
+  diasCredito     Int?      @map("dias_credito")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  financings Financing[]
+
+  @@map("financiadores")
+}
+
+/// 10.10 — Financiamiento (ADR-010).
 model Financing {
   id                    BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   ventaId               BigInt    @map("venta_id") @db.UnsignedBigInt
@@ -673,9 +692,10 @@ model Financing {
   updatedAt             DateTime  @updatedAt @map("updated_at")
   deletedAt             DateTime? @map("deleted_at")
 
-  venta    Sale      @relation(fields: [ventaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  cliente  Customer? @relation(fields: [clienteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  payments Payment[]
+  venta       Sale         @relation(fields: [ventaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  cliente     Customer?    @relation(fields: [clienteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  financiador Financiador? @relation(fields: [financiadorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  payments    Payment[]
 
   @@map("financiamientos")
 }

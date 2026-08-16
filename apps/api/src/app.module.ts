@@ -12,6 +12,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { AuthzModule } from './modules/authz/authz.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { CustomersModule } from './modules/customers/customers.module';
+import { FinancingModule } from './modules/financing/financing.module';
 import { HealthModule } from './modules/health/health.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { InventoryTransfersModule } from './modules/inventory-transfers/inventory-transfers.module';
@@ -64,6 +65,7 @@ import { PrismaModule } from './prisma/prisma.module';
     SalesModule,
     PaymentsModule,
     QuotationsModule,
+    FinancingModule,
     HealthModule,
   ],
   providers: [

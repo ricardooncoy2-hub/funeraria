@@ -18,10 +18,26 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdateDestinoPagoDto } from './dto/update-destino-pago.dto';
 import { VoidPaymentDto } from './dto/void-payment.dto';
 
-function financingStateFor(monto: Prisma.Decimal, cobrado: Prisma.Decimal): string {
-  if (cobrado.gte(monto)) return 'PAGADA';
+/**
+ * docs/21 §21.4: PARCIALMENTE_PAGADA/PAGADA son automáticas en cualquier
+ * financiamiento con pagos confirmados. Si el cobrado vuelve a 0 (pago
+ * anulado), se restaura el punto de partida de cada ciclo: PENDIENTE para
+ * el cliente, o el estado previo (típicamente APROBADA) para un
+ * financiador institucional — nunca se pisan estados de flujo
+ * institucional (DOCUMENTADA/ENVIADA/OBSERVADA/RECHAZADA/CANCELADA).
+ */
+function financingStateFor(
+  origenTipo: string,
+  estadoActual: string,
+  monto: Prisma.Decimal,
+  cobrado: Prisma.Decimal,
+): string {
+  if (cobrado.gt(0) && cobrado.gte(monto)) return 'PAGADA';
   if (cobrado.gt(0)) return 'PARCIALMENTE_PAGADA';
-  return 'PENDIENTE';
+  if (estadoActual === 'PARCIALMENTE_PAGADA' || estadoActual === 'PAGADA') {
+    return origenTipo === 'CLIENTE' ? 'PENDIENTE' : 'APROBADA';
+  }
+  return estadoActual;
 }
 
 @Injectable()
@@ -183,7 +199,14 @@ export class PaymentsService {
       const nuevoCobrado = cobradoPrevio.add(monto);
       await tx.financing.update({
         where: { id: financing.id },
-        data: { estado: financingStateFor(financing.monto, nuevoCobrado) },
+        data: {
+          estado: financingStateFor(
+            financing.origenTipo,
+            financing.estado,
+            financing.monto,
+            nuevoCobrado,
+          ),
+        },
       });
 
       return payment;
@@ -217,7 +240,14 @@ export class PaymentsService {
       const cobrado = await this.sumConfirmedPayments(financing.id, tx);
       await tx.financing.update({
         where: { id: financing.id },
-        data: { estado: financingStateFor(financing.monto, cobrado) },
+        data: {
+          estado: financingStateFor(
+            financing.origenTipo,
+            financing.estado,
+            financing.monto,
+            cobrado,
+          ),
+        },
       });
 
       return voided;

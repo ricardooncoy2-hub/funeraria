@@ -12,6 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ContractedServiceDto } from './contracted-service.dto';
+import { FinancingInputDto } from './financing-input.dto';
 import { SaleItemDto } from './sale-item.dto';
 
 export class CreateSaleDto {
@@ -52,4 +53,15 @@ export class CreateSaleDto {
   @ValidateNested({ each: true })
   @Type(() => ContractedServiceDto)
   serviciosContratados?: ContractedServiceDto[];
+
+  @ApiPropertyOptional({
+    type: [FinancingInputDto],
+    description: 'Si se omite, se crea un único financiamiento CLIENTE = total (RB-021).',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => FinancingInputDto)
+  financings?: FinancingInputDto[];
 }

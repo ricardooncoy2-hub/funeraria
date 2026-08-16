@@ -16,6 +16,7 @@ import { SedeScopeService } from '../authz/sede-scope.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PrismaTransaction } from '../inventory/stock-movement.types';
 import { CreateSaleDto } from './dto/create-sale.dto';
+import { FinancingInputDto } from './dto/financing-input.dto';
 import { SaleItemDto } from './dto/sale-item.dto';
 import { VoidSaleDto } from './dto/void-sale.dto';
 
@@ -32,6 +33,16 @@ interface ResolvedLine {
   subtotal: Prisma.Decimal;
   /** Productos a descontar de inventario (línea directa o componentes del plan, docs/20 §20.5). */
   stockDeductions: { productoId: bigint; cantidad: Prisma.Decimal }[];
+}
+
+interface ResolvedFinancing {
+  origenTipo: string;
+  clienteId: bigint | null;
+  financiadorId: bigint | null;
+  monto: Prisma.Decimal;
+  montoAutorizado: Prisma.Decimal | null;
+  numeroPoliza: string | null;
+  estado: string;
 }
 
 @Injectable()
@@ -124,6 +135,8 @@ export class SalesService {
     const igv = baseImponible.mul(igvPorcentaje).div(100);
     const total = subtotal.sub(descuentoGlobal).add(igv);
 
+    const financings = await this.resolveFinancings(dto.financings, total, cliente.id);
+
     const saleId = await this.prisma.$transaction(async (tx) => {
       const codigo = await this.generateCode(tx, branch.codigo);
 
@@ -159,17 +172,10 @@ export class SalesService {
         include: { items: true },
       });
 
-      // RB-021: por ahora un único financiamiento CLIENTE = total (financiadores
-      // institucionales llegan en Fase 4).
-      await tx.financing.create({
-        data: {
-          ventaId: sale.id,
-          origenTipo: 'CLIENTE',
-          clienteId: cliente.id,
-          monto: total,
-          estado: 'PENDIENTE',
-        },
-      });
+      // RB-021: Σ financings = total (validado en resolveFinancings).
+      for (const financing of financings) {
+        await tx.financing.create({ data: { ventaId: sale.id, ...financing } });
+      }
 
       if (dto.serviciosContratados) {
         for (const cs of dto.serviciosContratados) {
@@ -287,6 +293,77 @@ export class SalesService {
         };
       }),
     };
+  }
+
+  /**
+   * RB-021: Σ financiamientos = total. Sin dto.financings, un único
+   * financiamiento CLIENTE = total (venta simple sin institución).
+   */
+  private async resolveFinancings(
+    inputs: FinancingInputDto[] | undefined,
+    total: Prisma.Decimal,
+    clienteId: bigint,
+  ): Promise<ResolvedFinancing[]> {
+    if (!inputs) {
+      return [
+        {
+          origenTipo: 'CLIENTE',
+          clienteId,
+          financiadorId: null,
+          monto: total,
+          montoAutorizado: null,
+          numeroPoliza: null,
+          estado: 'PENDIENTE',
+        },
+      ];
+    }
+
+    const suma = inputs.reduce(
+      (acc, i) => acc.add(new Prisma.Decimal(i.monto)),
+      new Prisma.Decimal(0),
+    );
+    if (!suma.eq(total)) {
+      throw new BadRequestException({
+        code: 'FINANCIAMIENTO_NO_CUADRA',
+        message: `La suma de financiamientos (${suma.toString()}) debe ser igual al total (${total.toString()}).`,
+      });
+    }
+
+    const result: ResolvedFinancing[] = [];
+    for (const input of inputs) {
+      if (input.origenTipo === 'FINANCIADOR') {
+        const financiador = await this.prisma.financiador.findFirst({
+          where: { id: BigInt(input.financiadorId!), isActive: true, deletedAt: null },
+        });
+        if (!financiador) {
+          throw new NotFoundException({
+            code: 'FINANCIADOR_NO_ENCONTRADO',
+            message: 'Financiador no encontrado.',
+          });
+        }
+        result.push({
+          origenTipo: 'FINANCIADOR',
+          clienteId: null,
+          financiadorId: financiador.id,
+          monto: new Prisma.Decimal(input.monto),
+          montoAutorizado:
+            input.montoAutorizado !== undefined ? new Prisma.Decimal(input.montoAutorizado) : null,
+          numeroPoliza: input.numeroPoliza ?? null,
+          estado: 'PENDIENTE',
+        });
+      } else {
+        result.push({
+          origenTipo: 'CLIENTE',
+          clienteId,
+          financiadorId: null,
+          monto: new Prisma.Decimal(input.monto),
+          montoAutorizado: null,
+          numeroPoliza: null,
+          estado: 'PENDIENTE',
+        });
+      }
+    }
+    return result;
   }
 
   private async resolveLine(sedeVentaId: bigint, item: SaleItemDto): Promise<ResolvedLine> {
