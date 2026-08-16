@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -6,6 +7,11 @@ import { AppModule } from './app.module';
 
 const API_PREFIX = 'api/v1';
 const DOCS_PATH = `${API_PREFIX}/docs`;
+
+// Prisma usa BigInt para los IDs; JSON.stringify no lo serializa por defecto.
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function (this: bigint) {
+  return this.toString();
+};
 
 function parseCorsOrigins(raw: string | undefined): string[] {
   if (!raw) {
@@ -21,6 +27,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(helmet());
+  app.use(cookieParser());
   app.enableCors({
     origin: parseCorsOrigins(process.env.CORS_ORIGINS),
     credentials: true,
