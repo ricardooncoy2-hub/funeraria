@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
 import { Banner } from "@/components/ui/banner";
@@ -77,6 +77,9 @@ export function SaleWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [clienteSearch, setClienteSearch] = useState("");
+  // Guarda síncrona contra doble envío: isSubmitting de RHF se actualiza en un
+  // render posterior, dejando una ventana donde un doble clic dispara onSubmit dos veces.
+  const submittingRef = useRef(false);
 
   const { branches } = useAuthorizedBranches();
   const productsQuery = useQuery({ queryKey: ["productos", "all"], queryFn: fetchAllProducts });
@@ -176,11 +179,13 @@ export function SaleWizard() {
   }
 
   async function onSubmit(values: FormOutput) {
+    if (submittingRef.current) return;
     if (Math.abs(remaining) > 0.01) {
       setError("root", { message: "La suma de los financiamientos debe igualar el total de la venta." });
       setStep(2);
       return;
     }
+    submittingRef.current = true;
     try {
       const input: SaleInput = {
         ...values,
@@ -192,6 +197,7 @@ export function SaleWizard() {
     } catch (error) {
       const message = error instanceof ApiError ? error.message : "No se pudo crear la venta.";
       setError("root", { message });
+      submittingRef.current = false;
     }
   }
 

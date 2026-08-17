@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
+import { useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import * as z from "zod";
 import { Banner } from "@/components/ui/banner";
@@ -46,6 +47,8 @@ export function RegisterPaymentModal({
   const methodsQuery = useQuery({ queryKey: ["metodos-pago"], queryFn: fetchPaymentMethods, enabled: open });
   const destinosQuery = useQuery({ queryKey: ["destinos-pago"], queryFn: fetchDestinosPago, enabled: open });
 
+  const submittingRef = useRef(false);
+
   const {
     register,
     handleSubmit,
@@ -65,6 +68,8 @@ export function RegisterPaymentModal({
   );
 
   async function onSubmit(values: FormOutput) {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     try {
       const input: PaymentInput = { ...values, financiamientoId, referencia: values.referencia || undefined };
       await createPayment(input);
@@ -74,6 +79,8 @@ export function RegisterPaymentModal({
     } catch (error) {
       const message = error instanceof ApiError ? error.message : "No se pudo registrar el pago.";
       setError("root", { message });
+    } finally {
+      submittingRef.current = false;
     }
   }
 

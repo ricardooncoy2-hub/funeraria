@@ -29,6 +29,7 @@ export interface Payment {
   fecha: string;
   metodoPago: { id: string; codigo: string };
   destinoPago: { id: string; tipo: string; nombre: string };
+  venta: { id: string; codigo: string };
 }
 
 export interface PaymentInput {
@@ -48,10 +49,15 @@ export async function fetchDestinosPago() {
   return apiFetch<DestinoPago[]>("/destinos-pago");
 }
 
-export async function fetchPayments(params: { page?: number; pageSize?: number } = {}) {
+export async function fetchPayments(
+  params: { page?: number; pageSize?: number; ventaId?: string; sedeCobroId?: string; metodo?: string } = {},
+) {
   const search = new URLSearchParams();
   search.set("page", String(params.page ?? 1));
   search.set("pageSize", String(params.pageSize ?? 20));
+  if (params.ventaId) search.set("ventaId", params.ventaId);
+  if (params.sedeCobroId) search.set("sedeCobroId", params.sedeCobroId);
+  if (params.metodo) search.set("metodo", params.metodo);
   return apiFetch<PaginatedResult<Payment>>(`/pagos?${search.toString()}`);
 }
 

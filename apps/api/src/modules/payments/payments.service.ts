@@ -5,16 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import {
-  PaginatedResult,
-  PaginationQueryDto,
-  paginate,
-} from '../../common/dto/pagination-query.dto';
+import { PaginatedResult, paginate } from '../../common/dto/pagination-query.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../authz/authz.types';
 import { SedeScopeService } from '../authz/sede-scope.service';
 import { CreateDestinoPagoDto } from './dto/create-destino-pago.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { PaymentsQueryDto } from './dto/payments-query.dto';
 import { UpdateDestinoPagoDto } from './dto/update-destino-pago.dto';
 import { VoidPaymentDto } from './dto/void-payment.dto';
 
@@ -100,10 +97,16 @@ export class PaymentsService {
 
   async findAll(
     user: AuthenticatedUser,
-    query: PaginationQueryDto,
+    query: PaymentsQueryDto,
   ): Promise<PaginatedResult<unknown>> {
     const sedeIds = await this.sedeScopeService.authorizedSedeIds(user);
-    const where: Prisma.PaymentWhereInput = { sedeCobroId: { in: sedeIds }, deletedAt: null };
+    if (query.sedeCobroId) this.sedeScopeService.assertSedeAccess(user, BigInt(query.sedeCobroId));
+    const where: Prisma.PaymentWhereInput = {
+      sedeCobroId: query.sedeCobroId ? BigInt(query.sedeCobroId) : { in: sedeIds },
+      deletedAt: null,
+      ...(query.ventaId ? { ventaId: BigInt(query.ventaId) } : {}),
+      ...(query.metodo ? { metodoPago: { codigo: query.metodo } } : {}),
+    };
 
     const [data, total] = await Promise.all([
       this.prisma.payment.findMany({
@@ -111,6 +114,7 @@ export class PaymentsService {
         include: {
           metodoPago: { select: { id: true, codigo: true } },
           destinoPago: { select: { id: true, tipo: true, nombre: true } },
+          venta: { select: { id: true, codigo: true } },
         },
         orderBy: { fecha: 'desc' },
         skip: (query.page - 1) * query.pageSize,

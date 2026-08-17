@@ -227,7 +227,7 @@ export default function VentaDetallePage() {
                       <FinancingStateControl id={f.id} origenTipo={f.origenTipo} estado={f.estado} onChanged={refetch} />
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {canRegistrarPago && pendiente > 0 && (
+                      {canRegistrarPago && pendiente > 0 && f.estado !== "CANCELADA" && (
                         <Button variant="ghost" size="sm" onClick={() => setPayingFinancing(f)}>
                           Registrar pago
                         </Button>

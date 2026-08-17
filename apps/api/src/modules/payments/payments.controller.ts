@@ -2,11 +2,11 @@ import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { ParseBigIntPipe } from '../../common/pipes/parse-bigint.pipe';
 import type { AuthenticatedUser } from '../authz/authz.types';
 import { CreateDestinoPagoDto } from './dto/create-destino-pago.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { PaymentsQueryDto } from './dto/payments-query.dto';
 import { UpdateDestinoPagoDto } from './dto/update-destino-pago.dto';
 import { VoidPaymentDto } from './dto/void-payment.dto';
 import { PaymentsService } from './payments.service';
@@ -47,7 +47,7 @@ export class PaymentsController {
   @Permissions('pagos.registrar')
   @Get('pagos')
   @ApiOperation({ summary: 'Lista pagos de las sedes de cobro autorizadas' })
-  findAll(@CurrentUser() user: AuthenticatedUser, @Query() query: PaginationQueryDto) {
+  findAll(@CurrentUser() user: AuthenticatedUser, @Query() query: PaymentsQueryDto) {
     return this.paymentsService.findAll(user, query);
   }
 
