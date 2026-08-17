@@ -65,8 +65,11 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) throw await parseApiError(res);
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  // Los handlers que devuelven void (p. ej. soft-delete) responden 200 con
+  // cuerpo vacío, no 204 — res.json() falla con "Unexpected end of JSON
+  // input" sobre una cadena vacía, así que se verifica el texto primero.
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export { ApiError };

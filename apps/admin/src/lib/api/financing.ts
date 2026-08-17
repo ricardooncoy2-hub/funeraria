@@ -1,17 +1,36 @@
 import type { PaginatedResult } from "./types";
 import { apiFetch } from "./client";
 
+export const TIPOS_FINANCIADOR = [
+  "SIS",
+  "ESSALUD",
+  "ASEGURADORA",
+  "INSTITUCION",
+  "EMPRESA",
+  "CONVENIO",
+  "OTRO",
+] as const;
+export type TipoFinanciador = (typeof TIPOS_FINANCIADOR)[number];
+
 export interface Financiador {
   id: string;
-  tipo: "SIS" | "ESSALUD" | "ASEGURADORA" | "OTRO";
+  tipo: TipoFinanciador;
   nombre: string;
+  tipoDocumento: string | null;
+  numeroDocumento: string | null;
+  telefono: string | null;
+  correo: string | null;
   diasCredito: number | null;
   isActive: boolean;
 }
 
 export interface FinanciadorInput {
-  tipo: "SIS" | "ESSALUD" | "ASEGURADORA" | "OTRO";
+  tipo: TipoFinanciador;
   nombre: string;
+  tipoDocumento?: string;
+  numeroDocumento?: string;
+  telefono?: string;
+  correo?: string;
   diasCredito?: number;
 }
 
