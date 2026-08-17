@@ -23,6 +23,11 @@ export interface SupplierInput {
   direccion?: string;
 }
 
+export async function fetchAllSuppliers(): Promise<Supplier[]> {
+  const result = await apiFetch<PaginatedResult<Supplier>>("/proveedores?pageSize=100");
+  return result.data;
+}
+
 export async function fetchSuppliers(params: { q?: string; page?: number; pageSize?: number } = {}) {
   const search = new URLSearchParams();
   if (params.q) search.set("q", params.q);
