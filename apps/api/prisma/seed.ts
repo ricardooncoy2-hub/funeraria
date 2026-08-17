@@ -117,6 +117,102 @@ const ROLE_PERMISSIONS: Record<(typeof ROLES)[number]['codigo'], string[]> = {
   consulta: ['catalogo.leer', 'inventario.leer', 'reportes.sede'],
 };
 
+// Catálogo base: oferta común de una funeraria peruana (docs/15 §15.2,
+// docs/32 §32.5 — ejemplos de slug como /servicios/velatorio, /planes/plan-basico).
+const PRODUCT_CATEGORIES = [
+  { nombre: 'Ataudes', descripcion: 'Ataúdes y cofres funerarios' },
+  { nombre: 'Urnas y Cofres', descripcion: 'Urnas para cremación y cofres de restos' },
+  { nombre: 'Arreglos Florales', descripcion: 'Coronas y arreglos florales para velatorio' },
+  { nombre: 'Accesorios y Insumos', descripcion: 'Cirios, crucifijos y otros accesorios' },
+] as const;
+
+const PRODUCTS = [
+  { codigo: 'ATD-001', nombre: 'Ataúd Clásico', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 1500.0, stockInicial: 15, stockMinimo: 3 },
+  { codigo: 'ATD-002', nombre: 'Ataúd Económico', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 800.0, stockInicial: 15, stockMinimo: 3 },
+  { codigo: 'ATD-003', nombre: 'Ataúd de Lujo', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 3500.0, stockInicial: 8, stockMinimo: 2 },
+  { codigo: 'ATD-004', nombre: 'Ataúd Infantil', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 600.0, stockInicial: 5, stockMinimo: 2 },
+  { codigo: 'URN-001', nombre: 'Urna de Cerámica', categoria: 'Urnas y Cofres', unidadMedida: 'UND', precioVenta: 250.0, stockInicial: 20, stockMinimo: 5 },
+  { codigo: 'URN-002', nombre: 'Urna Metálica', categoria: 'Urnas y Cofres', unidadMedida: 'UND', precioVenta: 450.0, stockInicial: 15, stockMinimo: 5 },
+  { codigo: 'URN-003', nombre: 'Urna de Madera Tallada', categoria: 'Urnas y Cofres', unidadMedida: 'UND', precioVenta: 600.0, stockInicial: 10, stockMinimo: 3 },
+  { codigo: 'FLO-001', nombre: 'Arreglo Floral Clásico', categoria: 'Arreglos Florales', unidadMedida: 'UND', precioVenta: 180.0, stockInicial: 25, stockMinimo: 5 },
+  { codigo: 'FLO-002', nombre: 'Arreglo Floral Premium', categoria: 'Arreglos Florales', unidadMedida: 'UND', precioVenta: 350.0, stockInicial: 15, stockMinimo: 5 },
+  { codigo: 'FLO-003', nombre: 'Corona Fúnebre', categoria: 'Arreglos Florales', unidadMedida: 'UND', precioVenta: 220.0, stockInicial: 20, stockMinimo: 5 },
+  { codigo: 'ACC-001', nombre: 'Kit de Cirios y Velas', categoria: 'Accesorios y Insumos', unidadMedida: 'UND', precioVenta: 50.0, stockInicial: 40, stockMinimo: 10 },
+  { codigo: 'ACC-002', nombre: 'Libro de Condolencias', categoria: 'Accesorios y Insumos', unidadMedida: 'UND', precioVenta: 40.0, stockInicial: 30, stockMinimo: 10 },
+  { codigo: 'ACC-003', nombre: 'Crucifijo Ornamental', categoria: 'Accesorios y Insumos', unidadMedida: 'UND', precioVenta: 60.0, stockInicial: 30, stockMinimo: 10 },
+] as const;
+
+const SERVICES = [
+  { codigo: 'SRV-001', nombre: 'Velatorio 24 horas', precioBase: 900.0 },
+  { codigo: 'SRV-002', nombre: 'Velatorio 48 horas', precioBase: 1500.0 },
+  { codigo: 'SRV-003', nombre: 'Servicio de Cremación', precioBase: 1800.0 },
+  { codigo: 'SRV-004', nombre: 'Servicio de Inhumación', precioBase: 1200.0 },
+  { codigo: 'SRV-005', nombre: 'Traslado de Cuerpo (local)', precioBase: 250.0 },
+  { codigo: 'SRV-006', nombre: 'Traslado de Cuerpo (interprovincial)', precioBase: 800.0 },
+  { codigo: 'SRV-007', nombre: 'Embalsamamiento / Tanatopraxia', precioBase: 600.0 },
+  { codigo: 'SRV-008', nombre: 'Trámites Documentarios', precioBase: 150.0 },
+  { codigo: 'SRV-009', nombre: 'Servicio Religioso', precioBase: 300.0 },
+  { codigo: 'SRV-010', nombre: 'Transporte de Familiares', precioBase: 200.0 },
+  { codigo: 'SRV-011', nombre: 'Alquiler de Carroza Fúnebre', precioBase: 400.0 },
+] as const;
+
+const PLANS = [
+  {
+    codigo: 'PLN-001',
+    nombre: 'Plan Básico',
+    descripcion:
+      'Servicio esencial: ataúd económico, velatorio de 24 horas, traslado local y trámites documentarios.',
+    precio: 1900.0,
+    items: [
+      { itemTipo: 'PRODUCTO', codigo: 'ATD-002', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-001', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-005', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-008', cantidad: 1 },
+    ],
+  },
+  {
+    codigo: 'PLN-002',
+    nombre: 'Plan Tradicional',
+    descripcion:
+      'Ataúd clásico, velatorio de 24 horas, traslado local, trámites documentarios y arreglo floral clásico.',
+    precio: 2700.0,
+    items: [
+      { itemTipo: 'PRODUCTO', codigo: 'ATD-001', cantidad: 1 },
+      { itemTipo: 'PRODUCTO', codigo: 'FLO-001', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-001', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-005', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-008', cantidad: 1 },
+    ],
+  },
+  {
+    codigo: 'PLN-003',
+    nombre: 'Plan Premium',
+    descripcion:
+      'Ataúd de lujo, velatorio de 48 horas, traslado local, trámites, arreglo floral premium y servicio religioso.',
+    precio: 5500.0,
+    items: [
+      { itemTipo: 'PRODUCTO', codigo: 'ATD-003', cantidad: 1 },
+      { itemTipo: 'PRODUCTO', codigo: 'FLO-002', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-002', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-005', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-008', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-009', cantidad: 1 },
+    ],
+  },
+  {
+    codigo: 'PLN-004',
+    nombre: 'Plan Cremación',
+    descripcion: 'Urna metálica, servicio de cremación, velatorio de 24 horas y trámites documentarios.',
+    precio: 3000.0,
+    items: [
+      { itemTipo: 'PRODUCTO', codigo: 'URN-002', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-003', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-001', cantidad: 1 },
+      { itemTipo: 'SERVICIO', codigo: 'SRV-008', cantidad: 1 },
+    ],
+  },
+] as const;
+
 const PAYMENT_METHODS = [
   { codigo: 'EFECTIVO', nombre: 'Efectivo', esEfectivo: true },
   { codigo: 'TRANSFERENCIA', nombre: 'Transferencia bancaria', esEfectivo: false },
@@ -151,6 +247,90 @@ async function main() {
       isMain: true,
     },
   });
+
+  for (const categoria of PRODUCT_CATEGORIES) {
+    await prisma.productCategory.upsert({
+      where: { nombre: categoria.nombre },
+      update: {},
+      create: categoria,
+    });
+  }
+  const categorias = await prisma.productCategory.findMany();
+  const categoriaByNombre = new Map(categorias.map((c) => [c.nombre, c]));
+
+  for (const producto of PRODUCTS) {
+    const categoria = categoriaByNombre.get(producto.categoria);
+    if (!categoria) continue;
+    await prisma.product.upsert({
+      where: { codigo: producto.codigo },
+      update: {},
+      create: {
+        codigo: producto.codigo,
+        nombre: producto.nombre,
+        categoriaProductoId: categoria.id,
+        unidadMedida: producto.unidadMedida,
+        precioVenta: producto.precioVenta,
+      },
+    });
+  }
+  const productos = await prisma.product.findMany();
+  const productoByCodigo = new Map(productos.map((p) => [p.codigo, p]));
+
+  // Stock inicial centralizado en sede principal (comprasDescentralizadas=false);
+  // otras sedes reciben stock por transferencia, no por seed.
+  for (const producto of PRODUCTS) {
+    const productoRow = productoByCodigo.get(producto.codigo);
+    if (!productoRow) continue;
+    await prisma.inventory.upsert({
+      where: { sedeId_productoId: { sedeId: sedePrincipal.id, productoId: productoRow.id } },
+      update: {},
+      create: {
+        sedeId: sedePrincipal.id,
+        productoId: productoRow.id,
+        stockActual: producto.stockInicial,
+        stockMinimo: producto.stockMinimo,
+        costoPromedio: Math.round(producto.precioVenta * 0.6 * 100) / 100,
+      },
+    });
+  }
+
+  for (const servicio of SERVICES) {
+    await prisma.service.upsert({
+      where: { codigo: servicio.codigo },
+      update: {},
+      create: { codigo: servicio.codigo, nombre: servicio.nombre, precioBase: servicio.precioBase },
+    });
+  }
+  const servicios = await prisma.service.findMany();
+  const servicioByCodigo = new Map(servicios.map((s) => [s.codigo, s]));
+
+  for (const plan of PLANS) {
+    const planRow = await prisma.plan.upsert({
+      where: { codigo: plan.codigo },
+      update: {},
+      create: {
+        codigo: plan.codigo,
+        nombre: plan.nombre,
+        descripcion: plan.descripcion,
+        precio: plan.precio,
+      },
+    });
+    const existingItems = await prisma.planItem.count({ where: { planId: planRow.id } });
+    if (existingItems > 0) continue;
+    for (const item of plan.items) {
+      const productoRow = item.itemTipo === 'PRODUCTO' ? productoByCodigo.get(item.codigo) : undefined;
+      const servicioRow = item.itemTipo === 'SERVICIO' ? servicioByCodigo.get(item.codigo) : undefined;
+      await prisma.planItem.create({
+        data: {
+          planId: planRow.id,
+          itemTipo: item.itemTipo,
+          productoId: productoRow?.id,
+          servicioId: servicioRow?.id,
+          cantidad: item.cantidad,
+        },
+      });
+    }
+  }
 
   for (const rol of ROLES) {
     await prisma.role.upsert({
@@ -222,6 +402,7 @@ async function main() {
 
   console.log('Seed completado.');
   console.log(`  Sede principal: ${sedePrincipal.codigo} — ${sedePrincipal.nombre}`);
+  console.log(`  Catálogo: ${PRODUCTS.length} productos, ${SERVICES.length} servicios, ${PLANS.length} planes.`);
   console.log(`  Usuario admin: ${adminUser.usuario} (${adminUser.correo})`);
   if (!process.env.SEED_ADMIN_PASSWORD) {
     console.log(
