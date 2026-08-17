@@ -106,9 +106,8 @@ export default function PagosPage() {
         <div className="flex justify-end">
           {canAnular && info.row.original.estado === "CONFIRMADO" && (
             <Button
-              variant="ghost"
+              variant="danger"
               size="sm"
-              className="text-danger-600 hover:bg-danger-50"
               onClick={(e) => {
                 e.stopPropagation();
                 setVoidingPayment(info.row.original);

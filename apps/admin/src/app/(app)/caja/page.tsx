@@ -49,7 +49,7 @@ export default function CajaPage() {
           <div className="flex justify-end">
             {apertura ? (
               <Button
-                variant="ghost"
+                variant="link"
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -62,7 +62,7 @@ export default function CajaPage() {
               canOperar &&
               caja.isActive && (
                 <Button
-                  variant="ghost"
+                  variant="link"
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();

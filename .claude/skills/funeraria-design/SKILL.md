@@ -211,14 +211,17 @@ Estructura exacta según `docs/15_frontend.md` §15.2:
 
 ## 12. Botones y acciones
 
-Jerarquía de 4 niveles, consistente en ambas apps:
+Jerarquía de 7 variantes (`apps/admin/src/components/ui/button.tsx`), consistente en ambas apps:
 
 | Variante | Uso | Estilo |
 |---|---|---|
 | `primary` | Una sola por vista/sección — la acción principal (Guardar, Confirmar venta, Registrar pago) | Fondo `brand-600`, texto blanco, `hover:brand-700` |
 | `secondary` | Acciones alternativas de igual jerarquía visual pero no principales (Cancelar, Volver) | Borde `neutral-300`, texto `neutral-950`, fondo blanco, `hover:neutral-50` |
-| `ghost` | Acciones de baja fricción dentro de tablas/cards (Ver, Editar) | Sin fondo ni borde, texto `neutral-700`, `hover:neutral-100` |
-| `destructive` | Anular, eliminar, cancelar de forma irreversible | Fondo `danger`, texto blanco — **siempre** exige confirmación en modal (§16) antes de ejecutarse |
+| `ghost` | Utilidad sin tipo semántico: íconos sueltos, quitar una fila dentro de un formulario dinámico (`useFieldArray`), toggle de sidebar | Sin fondo ni borde, texto `neutral-700`, `hover:neutral-100` |
+| `link` | Acción de fila que **navega** (Ver detalle, Ver apertura, Ver kardex) o es la acción positiva principal de la fila (Registrar pago) | Chip: fondo `brand-50`, texto `brand-700`, `hover:bg-brand-100 hover:text-brand-800` |
+| `edit` | Acción de fila que **modifica en el lugar** (Editar, Roles y sedes, Marcar principal) | Chip: fondo `neutral-100`, texto `neutral-700`, `hover:bg-neutral-200` |
+| `danger` | Acción de fila **destructiva pero no bloqueante** (Desactivar, Anular) — no exige modal si ya hay confirmación de por medio en el flujo | Chip: fondo `danger-50`, texto `danger-600`, `hover:bg-danger-100` |
+| `destructive` | Acción destructiva **principal/independiente** de una vista (Anular venta, Cerrar caja) | Fondo `danger-600`, texto blanco — **siempre** exige confirmación en modal (§16) antes de ejecutarse |
 
 Reglas:
 - **Un solo botón `primary` visible por vista.** Si hay dos acciones igualmente importantes, ninguna es `primary` (usar dos `secondary`) o se re-piensa el flujo.
@@ -226,6 +229,24 @@ Reglas:
 - Todo botón que dispara una petición async muestra estado de carga (spinner + se deshabilita) y **nunca permite doble envío** (§18).
 - Texto de botón siempre es un verbo de acción claro ("Guardar cambios", no "OK"; "Registrar pago", no "Enviar").
 - Iconos en botones van antes del texto, 20px, mismo color que el texto/fondo del botón.
+- Todo botón mantiene su texto en una sola línea (`whitespace-nowrap`); si una fila de acciones no entra en el ancho disponible, el contenedor envuelve (`flex-wrap`) botones completos a una nueva línea — nunca se envuelve el texto dentro de un botón.
+
+### 12.1 Acciones de fila en tablas (obligatorio en todo módulo nuevo)
+
+Toda tabla de listado (§14) que muestre acciones por fila **debe** colorear cada botón según el tipo de acción, no dejarlo en `ghost` plano — un botón sin fondo se confunde con texto inerte, especialmente si la fila ya no navega al detalle por sí sola (§14, hover de fila sin `onClick` cuando existe un botón "Ver detalle" dedicado).
+
+Mapeo obligatorio (reutiliza los mismos tokens de marca/semánticos de §3, no inventa un color nuevo):
+
+| Tipo de acción | Variante | Ejemplos |
+|---|---|---|
+| Ver / navegar a una página de detalle | `link` | "Ver detalle", "Ver apertura", "Ver kardex" |
+| Acción positiva principal de la fila (no destructiva, no solo "editar") | `link` | "Registrar pago", "Abrir caja" |
+| Editar / modificar en el lugar (abre un modal o formulario) | `edit` | "Editar", "Roles y sedes", "Marcar principal" |
+| Desactivar / anular (reversible o con motivo, no requiere modal de confirmación aparte) | `danger` | "Desactivar", "Anular" |
+
+Si una fila tiene más de una acción, van en ese orden (ver → editar → destructiva), alineadas a la derecha, con `gap-1`. Nunca más de 3 acciones visibles por fila sin agrupar (§14).
+
+**Excluido de este patrón:** botones de utilidad dentro de un formulario (agregar/quitar una fila de un `useFieldArray`, p. ej. "Agregar ítem"/el ícono de basura para quitarlo) — esos siguen siendo `ghost`, no son una acción sobre un registro persistido.
 
 ## 13. Formularios
 

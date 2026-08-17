@@ -75,16 +75,11 @@ export default function ProveedoresPage() {
               const supplier = info.row.original;
               return (
                 <div className="flex justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => { setEditing(supplier); setFormOpen(true); }}>
+                  <Button variant="edit" size="sm" onClick={() => { setEditing(supplier); setFormOpen(true); }}>
                     Editar
                   </Button>
                   {supplier.isActive && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-danger-600 hover:bg-danger-50"
-                      onClick={() => setDeactivating(supplier)}
-                    >
+                    <Button variant="danger" size="sm" onClick={() => setDeactivating(supplier)}>
                       Desactivar
                     </Button>
                   )}

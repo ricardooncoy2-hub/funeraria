@@ -74,7 +74,7 @@ export default function InventarioPage() {
       header: "Acciones",
       cell: (info) => (
         <div className="flex justify-end">
-          <Button variant="ghost" size="sm" onClick={() => setKardexRow(info.row.original)}>
+          <Button variant="link" size="sm" onClick={() => setKardexRow(info.row.original)}>
             Ver kardex
           </Button>
         </div>

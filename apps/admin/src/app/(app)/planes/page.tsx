@@ -78,16 +78,11 @@ export default function PlanesPage() {
               const plan = info.row.original;
               return (
                 <div className="flex justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => setEditingPlanId(plan.id)}>
+                  <Button variant="edit" size="sm" onClick={() => setEditingPlanId(plan.id)}>
                     Editar
                   </Button>
                   {plan.isActive && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-danger-600 hover:bg-danger-50"
-                      onClick={() => setDeactivating(plan)}
-                    >
+                    <Button variant="danger" size="sm" onClick={() => setDeactivating(plan)}>
                       Desactivar
                     </Button>
                   )}

@@ -228,7 +228,7 @@ export default function VentaDetallePage() {
                     </td>
                     <td className="px-3 py-2 text-right">
                       {canRegistrarPago && pendiente > 0 && f.estado !== "CANCELADA" && (
-                        <Button variant="ghost" size="sm" onClick={() => setPayingFinancing(f)}>
+                        <Button variant="link" size="sm" onClick={() => setPayingFinancing(f)}>
                           Registrar pago
                         </Button>
                       )}
@@ -266,7 +266,7 @@ export default function VentaDetallePage() {
                     </td>
                     <td className="px-3 py-2 text-right">
                       {canAnularPago && p.estado === "CONFIRMADO" && (
-                        <Button variant="ghost" size="sm" className="text-danger-600 hover:bg-danger-50" onClick={() => setVoidingPaymentId(p.id)}>
+                        <Button variant="danger" size="sm" onClick={() => setVoidingPaymentId(p.id)}>
                           Anular
                         </Button>
                       )}

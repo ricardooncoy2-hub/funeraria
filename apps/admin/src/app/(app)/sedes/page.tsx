@@ -96,22 +96,17 @@ export default function SedesPage() {
             cell: (info) => {
               const sede = info.row.original;
               return (
-                <div className="flex justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => openEdit(sede)}>
+                <div className="flex flex-wrap justify-end gap-1">
+                  <Button variant="edit" size="sm" onClick={() => openEdit(sede)}>
                     Editar
                   </Button>
                   {!sede.isMain && sede.isActive && (
-                    <Button variant="ghost" size="sm" onClick={() => setConfirmAction({ type: "principal", sede })}>
+                    <Button variant="edit" size="sm" onClick={() => setConfirmAction({ type: "principal", sede })}>
                       Marcar principal
                     </Button>
                   )}
                   {!sede.isMain && sede.isActive && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-danger-600 hover:bg-danger-50"
-                      onClick={() => setConfirmAction({ type: "desactivar", sede })}
-                    >
+                    <Button variant="danger" size="sm" onClick={() => setConfirmAction({ type: "desactivar", sede })}>
                       Desactivar
                     </Button>
                   )}

@@ -75,20 +75,15 @@ export function UsersTab() {
       cell: (info) => {
         const user = info.row.original;
         return (
-          <div className="flex justify-end gap-1">
-            <Button variant="ghost" size="sm" onClick={() => { setEditingUser(user); setFormOpen(true); }}>
+          <div className="flex flex-wrap justify-end gap-1">
+            <Button variant="edit" size="sm" onClick={() => { setEditingUser(user); setFormOpen(true); }}>
               Editar
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setAccessUserId(user.id)}>
+            <Button variant="edit" size="sm" onClick={() => setAccessUserId(user.id)}>
               Roles y sedes
             </Button>
             {user.isActive && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-danger-600 hover:bg-danger-50"
-                onClick={() => setDeactivating(user)}
-              >
+              <Button variant="danger" size="sm" onClick={() => setDeactivating(user)}>
                 Desactivar
               </Button>
             )}

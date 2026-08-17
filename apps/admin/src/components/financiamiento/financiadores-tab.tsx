@@ -77,16 +77,11 @@ export function FinanciadoresTab() {
               const financiador = info.row.original;
               return (
                 <div className="flex justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => { setEditing(financiador); setFormOpen(true); }}>
+                  <Button variant="edit" size="sm" onClick={() => { setEditing(financiador); setFormOpen(true); }}>
                     Editar
                   </Button>
                   {financiador.isActive && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-danger-600 hover:bg-danger-50"
-                      onClick={() => setDeactivating(financiador)}
-                    >
+                    <Button variant="danger" size="sm" onClick={() => setDeactivating(financiador)}>
                       Desactivar
                     </Button>
                   )}

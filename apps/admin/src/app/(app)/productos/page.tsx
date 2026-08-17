@@ -75,16 +75,11 @@ export default function ProductosPage() {
               const product = info.row.original;
               return (
                 <div className="flex justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => { setEditingProduct(product); setFormOpen(true); }}>
+                  <Button variant="edit" size="sm" onClick={() => { setEditingProduct(product); setFormOpen(true); }}>
                     Editar
                   </Button>
                   {product.isActive && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-danger-600 hover:bg-danger-50"
-                      onClick={() => setDeactivating(product)}
-                    >
+                    <Button variant="danger" size="sm" onClick={() => setDeactivating(product)}>
                       Desactivar
                     </Button>
                   )}

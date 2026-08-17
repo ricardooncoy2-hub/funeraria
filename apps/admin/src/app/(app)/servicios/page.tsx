@@ -72,16 +72,11 @@ export default function ServiciosPage() {
               const service = info.row.original;
               return (
                 <div className="flex justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => { setEditing(service); setFormOpen(true); }}>
+                  <Button variant="edit" size="sm" onClick={() => { setEditing(service); setFormOpen(true); }}>
                     Editar
                   </Button>
                   {service.isActive && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-danger-600 hover:bg-danger-50"
-                      onClick={() => setDeactivating(service)}
-                    >
+                    <Button variant="danger" size="sm" onClick={() => setDeactivating(service)}>
                       Desactivar
                     </Button>
                   )}
