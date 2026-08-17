@@ -50,7 +50,7 @@ export default function ComprasPage() {
       cell: (info) => (
         <div className="flex justify-end">
           <Button
-            variant="ghost"
+            variant="link"
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
