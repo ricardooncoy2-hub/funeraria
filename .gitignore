@@ -34,3 +34,7 @@ Thumbs.db
 
 # vercel (not used, but ignore if generated locally)
 .vercel
+
+# Claude Code local/ephemeral state (settings.json y skills sí se versionan)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

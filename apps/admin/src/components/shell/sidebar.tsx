@@ -1,0 +1,137 @@
+"use client";
+
+import { ChevronsLeft, ChevronsRight, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { NAV_ITEMS } from "@/lib/nav-config";
+import { hasPermission, useAuthStore } from "@/lib/auth/auth-store";
+import { useUiStore } from "@/lib/ui/ui-store";
+import { cn } from "@/lib/utils";
+
+function NavLink({
+  item,
+  collapsed,
+  active,
+  onNavigate,
+}: {
+  item: (typeof NAV_ITEMS)[number];
+  collapsed: boolean;
+  active: boolean;
+  onNavigate: () => void;
+}) {
+  const Icon = item.icon;
+
+  if (!item.implemented) {
+    return (
+      <div
+        className={cn(
+          "flex items-center gap-3 rounded-md px-3 py-2 text-sm text-neutral-400",
+          collapsed && "justify-center px-2",
+        )}
+        aria-disabled
+        title={`${item.label} — próximamente`}
+      >
+        <Icon className="size-5 shrink-0" aria-hidden />
+        {!collapsed && <span className="truncate">{item.label}</span>}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      title={collapsed ? item.label : undefined}
+      className={cn(
+        "flex items-center gap-3 rounded-md border-l-[3px] border-transparent px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100",
+        collapsed && "justify-center px-2",
+        active && "border-brand-600 bg-brand-50 text-brand-700",
+      )}
+    >
+      <Icon className="size-5 shrink-0" aria-hidden />
+      {!collapsed && <span className="truncate">{item.label}</span>}
+    </Link>
+  );
+}
+
+function SidebarContent({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: () => void }) {
+  const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+  const items = NAV_ITEMS.filter((item) => !item.permission || hasPermission(user, item.permission));
+
+  return (
+    <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3" aria-label="Navegación principal">
+      {items.map((item) => (
+        <NavLink
+          key={item.href}
+          item={item}
+          collapsed={collapsed}
+          active={pathname === item.href}
+          onNavigate={onNavigate}
+        />
+      ))}
+    </nav>
+  );
+}
+
+export function Sidebar() {
+  const collapsed = useUiStore((s) => s.sidebarCollapsed);
+  const toggleCollapsed = useUiStore((s) => s.toggleSidebarCollapsed);
+  const mobileNavOpen = useUiStore((s) => s.mobileNavOpen);
+  const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
+
+  return (
+    <>
+      {/* Desktop: fija, colapsable a íconos (SKILL.md §7) */}
+      <aside
+        className={cn(
+          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-neutral-200 bg-white transition-[width] duration-150 lg:flex",
+          collapsed ? "w-16" : "w-60",
+        )}
+      >
+        <div className="flex h-14 items-center justify-center border-b border-neutral-200 px-3">
+          {collapsed ? (
+            <span className="text-lg font-semibold text-brand-600">M</span>
+          ) : (
+            <span className="text-lg font-semibold text-brand-600">Minaya</span>
+          )}
+        </div>
+        <SidebarContent collapsed={collapsed} onNavigate={() => {}} />
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="flex items-center justify-center gap-2 border-t border-neutral-200 p-3 text-sm text-neutral-500 hover:bg-neutral-100"
+          aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
+        >
+          {collapsed ? <ChevronsRight className="size-4" aria-hidden /> : <ChevronsLeft className="size-4" aria-hidden />}
+        </button>
+      </aside>
+
+      {/* Mobile: overlay a pantalla completa (SKILL.md §8) */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div
+            className="absolute inset-0 bg-neutral-950/50"
+            onClick={() => setMobileNavOpen(false)}
+            aria-hidden
+          />
+          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-md">
+            <div className="flex h-14 items-center justify-between border-b border-neutral-200 px-4">
+              <Image src="/logo-minaya.png" alt="Funeraria Minaya" width={140} height={37} />
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(false)}
+                aria-label="Cerrar menú"
+                className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100"
+              >
+                <X className="size-5" aria-hidden />
+              </button>
+            </div>
+            <SidebarContent collapsed={false} onNavigate={() => setMobileNavOpen(false)} />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
