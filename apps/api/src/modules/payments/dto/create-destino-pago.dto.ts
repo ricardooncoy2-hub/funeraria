@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsNumberString, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsNumberString, IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
 
 const TIPOS_DESTINO = ['CAJA', 'CUENTA_BANCARIA', 'POS', 'BILLETERA_DIGITAL', 'OTRO'] as const;
 
@@ -17,6 +17,11 @@ export class CreateDestinoPagoDto {
   @IsOptional()
   @IsNumberString()
   sedeAdministradoraId?: string;
+
+  @ApiPropertyOptional({ description: 'Obligatorio si tipo=CAJA (docs/10 §10.5)' })
+  @ValidateIf((dto: CreateDestinoPagoDto) => dto.tipo === 'CAJA')
+  @IsNumberString()
+  cajaId?: string;
 
   @ApiPropertyOptional({ maxLength: 80 })
   @IsOptional()

@@ -11,6 +11,7 @@ import { SedeScopeGuard } from './common/guards/sede-scope.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { AuthzModule } from './modules/authz/authz.module';
 import { BranchesModule } from './modules/branches/branches.module';
+import { CashModule } from './modules/cash/cash.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { FinancingModule } from './modules/financing/financing.module';
 import { HealthModule } from './modules/health/health.module';
@@ -66,6 +67,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PaymentsModule,
     QuotationsModule,
     FinancingModule,
+    CashModule,
     HealthModule,
   ],
   providers: [

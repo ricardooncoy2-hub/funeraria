@@ -64,6 +64,7 @@ export class PaymentsService {
         sedeAdministradoraId: dto.sedeAdministradoraId
           ? BigInt(dto.sedeAdministradoraId)
           : undefined,
+        cajaId: dto.cajaId ? BigInt(dto.cajaId) : undefined,
         numeroReferencia: dto.numeroReferencia,
       },
     });
@@ -79,6 +80,7 @@ export class PaymentsService {
         sedeAdministradoraId: dto.sedeAdministradoraId
           ? BigInt(dto.sedeAdministradoraId)
           : undefined,
+        cajaId: dto.cajaId ? BigInt(dto.cajaId) : undefined,
         numeroReferencia: dto.numeroReferencia,
         isActive: dto.isActive,
       },
@@ -157,8 +159,7 @@ export class PaymentsService {
         message: 'Destino de pago no encontrado.',
       });
 
-    // RB-027: coherencia método <-> destino. La exigencia de caja ABIERTA
-    // (RB-008/026) llega en Fase 5 junto con el módulo `cash`.
+    // RB-027: coherencia método <-> destino.
     if (metodo.esEfectivo && destino.tipo !== 'CAJA') {
       throw new BadRequestException({
         code: 'DESTINO_INCOHERENTE',
@@ -172,6 +173,39 @@ export class PaymentsService {
       });
     }
 
+    // RB-008/026, CA-PAY-04/CA-CASH-01: efectivo requiere una caja ABIERTA en
+    // la sede de cobro; el pago queda vinculado a esa apertura.
+    let apertura: { id: bigint } | null = null;
+    if (metodo.esEfectivo) {
+      if (!destino.cajaId) {
+        throw new BadRequestException({
+          code: 'DESTINO_INCOHERENTE',
+          message: 'El destino CAJA no tiene una caja física asociada.',
+        });
+      }
+      const caja = await this.prisma.cash.findFirst({
+        where: { id: destino.cajaId, isActive: true },
+      });
+      if (!caja)
+        throw new NotFoundException({ code: 'CAJA_NO_ENCONTRADA', message: 'Caja no encontrada.' });
+      if (caja.sedeId !== sedeCobroId) {
+        throw new BadRequestException({
+          code: 'DESTINO_INCOHERENTE',
+          message: 'La caja del destino no pertenece a la sede de cobro (RB-008).',
+        });
+      }
+      apertura = await this.prisma.cashOpening.findFirst({
+        where: { cajaId: caja.id, estado: 'ABIERTA' },
+        select: { id: true },
+      });
+      if (!apertura) {
+        throw new ConflictException({
+          code: 'CAJA_NO_ABIERTA',
+          message: 'No hay una caja abierta en la sede de cobro (RB-008/026).',
+        });
+      }
+    }
+
     const monto = new Prisma.Decimal(dto.monto);
     const cobradoPrevio = await this.sumConfirmedPayments(financing.id);
     if (cobradoPrevio.add(monto).gt(financing.monto)) {
@@ -182,6 +216,20 @@ export class PaymentsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      if (apertura) {
+        // Vuelve a bloquear/validar dentro de la transacción (RB-025-like):
+        // la caja pudo haberse cerrado entre la validación previa y este punto.
+        const rows = await tx.$queryRaw<{ estado: string }[]>`
+          SELECT estado FROM aperturas_caja WHERE id = ${apertura.id} FOR UPDATE
+        `;
+        if (rows[0]?.estado !== 'ABIERTA') {
+          throw new ConflictException({
+            code: 'CAJA_NO_ABIERTA',
+            message: 'La caja se cerró antes de confirmar el pago.',
+          });
+        }
+      }
+
       const payment = await tx.payment.create({
         data: {
           financiamientoId: financing.id,
@@ -190,11 +238,27 @@ export class PaymentsService {
           metodoPagoId: metodo.id,
           destinoPagoId: destino.id,
           sedeCobroId,
+          aperturaCajaId: apertura?.id,
           estado: 'CONFIRMADO',
           referencia: dto.referencia,
           usuarioId: user.id,
         },
       });
+
+      if (apertura) {
+        await tx.cashMovement.create({
+          data: {
+            aperturaCajaId: apertura.id,
+            cajaId: destino.cajaId!,
+            sedeId: sedeCobroId,
+            tipo: 'VENTA_EFECTIVO',
+            monto,
+            pagoId: payment.id,
+            concepto: `Pago en efectivo — financiamiento #${financing.id}`,
+            usuarioId: user.id,
+          },
+        });
+      }
 
       const nuevoCobrado = cobradoPrevio.add(monto);
       await tx.financing.update({
@@ -233,6 +297,30 @@ export class PaymentsService {
           anuladoAt: new Date(),
         },
       });
+
+      // docs/22 §22.5: pago en efectivo anulado -> movimiento inverso en caja.
+      // Si la apertura ya cerró, el movimiento queda como constancia para el
+      // arqueo manual (no se puede reabrir ni recalcular un cierre pasado).
+      if (payment.aperturaCajaId) {
+        const apertura = await tx.cashOpening.findUniqueOrThrow({
+          where: { id: payment.aperturaCajaId },
+        });
+        await tx.cashMovement.create({
+          data: {
+            aperturaCajaId: apertura.id,
+            cajaId: apertura.cajaId,
+            sedeId: apertura.sedeId,
+            tipo: 'EGRESO',
+            monto: payment.monto,
+            pagoId: payment.id,
+            concepto:
+              apertura.estado === 'ABIERTA'
+                ? `Reverso por anulación de pago #${payment.id}`
+                : `Reverso por anulación de pago #${payment.id} (caja ya cerrada, constancia para arqueo)`,
+            usuarioId: user.id,
+          },
+        });
+      }
 
       const financing = await tx.financing.findUniqueOrThrow({
         where: { id: payment.financiamientoId },

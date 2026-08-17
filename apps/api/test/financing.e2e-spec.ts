@@ -19,6 +19,7 @@ describe('Financiamiento / CxC (e2e)', () => {
   let product: { id: bigint };
   let customer: { id: bigint };
   let financiador: { id: bigint };
+  let caja: { id: bigint };
   let destinoCaja: { id: bigint };
   let destinoBanco: { id: bigint };
   let metodoEfectivoId: bigint;
@@ -68,8 +69,19 @@ describe('Financiamiento / CxC (e2e)', () => {
       data: { sedeId: branch.id, productoId: product.id, stockActual: 5, costoPromedio: 0 },
     });
 
+    caja = await prisma.cash.create({
+      data: { sedeId: branch.id, nombre: `E2E Caja Fisica Fin ${suffix}` },
+    });
+    await prisma.cashOpening.create({
+      data: { cajaId: caja.id, sedeId: branch.id, usuarioAperturaId: 1n, saldoInicial: 0 },
+    });
     destinoCaja = await prisma.destinoPago.create({
-      data: { tipo: 'CAJA', nombre: `E2E Caja Fin ${suffix}`, sedeAdministradoraId: branch.id },
+      data: {
+        tipo: 'CAJA',
+        nombre: `E2E Caja Fin ${suffix}`,
+        sedeAdministradoraId: branch.id,
+        cajaId: caja.id,
+      },
     });
     destinoBanco = await prisma.destinoPago.create({
       data: {
@@ -96,7 +108,9 @@ describe('Financiamiento / CxC (e2e)', () => {
   });
 
   afterAll(async () => {
+    await prisma.cashMovement.deleteMany({ where: { cajaId: caja.id } });
     await prisma.payment.deleteMany({ where: { sedeCobroId: branch.id } });
+    await prisma.cashOpening.deleteMany({ where: { cajaId: caja.id } });
     await prisma.financing.deleteMany({ where: { venta: { sedeVentaId: branch.id } } });
     await prisma.saleItem.deleteMany({ where: { venta: { sedeVentaId: branch.id } } });
     await prisma.sale.deleteMany({ where: { sedeVentaId: branch.id } });
@@ -105,6 +119,7 @@ describe('Financiamiento / CxC (e2e)', () => {
     await prisma.destinoPago.deleteMany({
       where: { id: { in: [destinoCaja.id, destinoBanco.id] } },
     });
+    await prisma.cash.deleteMany({ where: { id: caja.id } });
     await prisma.financiador.delete({ where: { id: financiador.id } });
     await prisma.customer.delete({ where: { id: customer.id } });
     await prisma.product.delete({ where: { id: product.id } });

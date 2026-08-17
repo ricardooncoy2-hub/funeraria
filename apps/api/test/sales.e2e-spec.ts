@@ -18,6 +18,7 @@ describe('Ventas / Pagos / Cotizaciones (e2e)', () => {
   let product: { id: bigint };
   let customer: { id: bigint };
   let branch: { id: bigint };
+  let caja: { id: bigint };
   let destinoCaja: { id: bigint };
   let destinoPos: { id: bigint };
   let metodoEfectivoId: bigint;
@@ -66,8 +67,19 @@ describe('Ventas / Pagos / Cotizaciones (e2e)', () => {
       data: { sedeId: branch.id, productoId: product.id, stockActual: 10, costoPromedio: 50 },
     });
 
+    caja = await prisma.cash.create({
+      data: { sedeId: branch.id, nombre: `E2E Caja Fisica ${suffix}` },
+    });
+    await prisma.cashOpening.create({
+      data: { cajaId: caja.id, sedeId: branch.id, usuarioAperturaId: 1n, saldoInicial: 0 },
+    });
     destinoCaja = await prisma.destinoPago.create({
-      data: { tipo: 'CAJA', nombre: `E2E Caja ${suffix}`, sedeAdministradoraId: branch.id },
+      data: {
+        tipo: 'CAJA',
+        nombre: `E2E Caja ${suffix}`,
+        sedeAdministradoraId: branch.id,
+        cajaId: caja.id,
+      },
     });
     destinoPos = await prisma.destinoPago.create({
       data: { tipo: 'POS', nombre: `E2E POS ${suffix}` },
@@ -88,7 +100,9 @@ describe('Ventas / Pagos / Cotizaciones (e2e)', () => {
   });
 
   afterAll(async () => {
+    await prisma.cashMovement.deleteMany({ where: { cajaId: caja.id } });
     await prisma.payment.deleteMany({ where: { sedeCobroId: branch.id } });
+    await prisma.cashOpening.deleteMany({ where: { cajaId: caja.id } });
     await prisma.financing.deleteMany({ where: { venta: { sedeVentaId: branch.id } } });
     await prisma.saleItem.deleteMany({ where: { venta: { sedeVentaId: branch.id } } });
     await prisma.sale.deleteMany({ where: { sedeVentaId: branch.id } });
@@ -97,6 +111,7 @@ describe('Ventas / Pagos / Cotizaciones (e2e)', () => {
     await prisma.inventoryMovement.deleteMany({ where: { productoId: product.id } });
     await prisma.inventory.deleteMany({ where: { productoId: product.id } });
     await prisma.destinoPago.deleteMany({ where: { id: { in: [destinoCaja.id, destinoPos.id] } } });
+    await prisma.cash.deleteMany({ where: { id: caja.id } });
     await prisma.customer.delete({ where: { id: customer.id } });
     await prisma.product.delete({ where: { id: product.id } });
     await prisma.productCategory.delete({ where: { id: category.id } });
