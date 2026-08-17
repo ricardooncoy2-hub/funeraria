@@ -49,7 +49,14 @@ export default function ComprasPage() {
       header: "Acciones",
       cell: (info) => (
         <div className="flex justify-end">
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/compras/${info.row.original.id}`)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/compras/${info.row.original.id}`);
+            }}
+          >
             Ver detalle
           </Button>
         </div>
@@ -77,7 +84,6 @@ export default function ComprasPage() {
         isError={query.isError}
         errorMessage={query.error instanceof ApiError ? query.error.message : undefined}
         emptyTitle="Aún no hay compras registradas"
-        onRowClick={(row) => router.push(`/compras/${row.id}`)}
       />
 
       {query.data && <Pagination meta={query.data.meta} onPageChange={setPage} />}

@@ -105,6 +105,15 @@ En desarrollo, Docker **no** se usa (es pesado en Windows). Los servicios corren
 
 El `docker-compose.yml` permanece en el repo como artefacto de **despliegue**, no se ejecuta en el día a día local.
 
+**Troubleshooting — `apps/admin` (Next.js + Turbopack) se cuelga en "Rendering..." al navegar entre menús:**
+El escaneo en tiempo real de **Windows Defender** sobre la carpeta del repo (en particular los symlinks de `node_modules/.pnpm` y la caché `.next` de Turbopack) puede causar cuelgues intermitentes del dev server — la petición de navegación (RSC) nunca llega a completarse y, por tanto, tampoco se ve la petición correspondiente en la consola de `apps/api`. Solución: excluir la carpeta del repo del escaneo en tiempo real (PowerShell como administrador):
+
+```powershell
+Add-MpPreference -ExclusionPath "D:\ruta\al\repo\funeraria-minaya"
+```
+
+Reiniciar `pnpm dev` después de aplicar la exclusión.
+
 ## 26.11 Paridad dev/prod
 
 Riesgo: desarrollar sin contenedores puede ocultar diferencias de versión ("en mi máquina funciona"). Mitigación:

@@ -49,7 +49,14 @@ export default function VentasPage() {
       header: "Acciones",
       cell: (info) => (
         <div className="flex justify-end">
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/ventas/${info.row.original.id}`)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/ventas/${info.row.original.id}`);
+            }}
+          >
             Ver detalle
           </Button>
         </div>
@@ -79,7 +86,6 @@ export default function VentasPage() {
         isError={query.isError}
         errorMessage={query.error instanceof ApiError ? query.error.message : undefined}
         emptyTitle="Aún no hay ventas registradas"
-        onRowClick={(row) => router.push(`/ventas/${row.id}`)}
       />
 
       {query.data && <Pagination meta={query.data.meta} onPageChange={setPage} />}

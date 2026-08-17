@@ -48,13 +48,27 @@ export default function CajaPage() {
         return (
           <div className="flex justify-end">
             {apertura ? (
-              <Button variant="ghost" size="sm" onClick={() => router.push(`/caja/${apertura.id}`)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/caja/${apertura.id}`);
+                }}
+              >
                 Ver apertura
               </Button>
             ) : (
               canOperar &&
               caja.isActive && (
-                <Button variant="ghost" size="sm" onClick={() => setOpening(caja)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpening(caja);
+                  }}
+                >
                   Abrir caja
                 </Button>
               )
@@ -79,7 +93,6 @@ export default function CajaPage() {
         isError={query.isError}
         errorMessage={query.error instanceof ApiError ? query.error.message : undefined}
         emptyTitle="No hay cajas registradas en las sedes autorizadas"
-        onRowClick={(row) => row.openings[0] && router.push(`/caja/${row.openings[0].id}`)}
       />
 
       {opening && (

@@ -41,7 +41,14 @@ export default function TransferenciasPage() {
       header: "Acciones",
       cell: (info) => (
         <div className="flex justify-end">
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/transferencias/${info.row.original.id}`)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/transferencias/${info.row.original.id}`);
+            }}
+          >
             Ver detalle
           </Button>
         </div>
@@ -71,7 +78,6 @@ export default function TransferenciasPage() {
         isError={query.isError}
         errorMessage={query.error instanceof ApiError ? query.error.message : undefined}
         emptyTitle="Aún no hay transferencias registradas"
-        onRowClick={(row) => router.push(`/transferencias/${row.id}`)}
       />
 
       {query.data && <Pagination meta={query.data.meta} onPageChange={setPage} />}
