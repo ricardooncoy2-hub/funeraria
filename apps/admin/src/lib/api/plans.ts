@@ -41,6 +41,11 @@ export interface PlanInput {
   items: PlanItemInput[];
 }
 
+export async function fetchAllPlans(): Promise<Plan[]> {
+  const result = await apiFetch<PaginatedResult<Plan>>("/planes?pageSize=100");
+  return result.data;
+}
+
 export async function fetchPlans(params: { q?: string; page?: number; pageSize?: number } = {}) {
   const search = new URLSearchParams();
   if (params.q) search.set("q", params.q);

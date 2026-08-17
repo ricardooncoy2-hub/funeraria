@@ -17,6 +17,13 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Permissions('pagos.registrar')
+  @Get('metodos-pago')
+  @ApiOperation({ summary: 'Lista métodos de pago activos' })
+  findAllMetodos() {
+    return this.paymentsService.findAllMetodos();
+  }
+
+  @Permissions('pagos.registrar')
   @Get('destinos-pago')
   @ApiOperation({ summary: 'Lista destinos de pago activos' })
   findAllDestinos() {

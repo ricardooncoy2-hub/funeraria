@@ -47,6 +47,15 @@ export class PaymentsService {
     private readonly sedeScopeService: SedeScopeService,
   ) {}
 
+  // --- Métodos de pago ---
+
+  findAllMetodos() {
+    return this.prisma.paymentMethod.findMany({
+      where: { isActive: true },
+      orderBy: { nombre: 'asc' },
+    });
+  }
+
   // --- Destinos de pago ---
 
   findAllDestinos() {
