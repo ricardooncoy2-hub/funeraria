@@ -32,6 +32,7 @@ const ESTADO_VARIANT: Record<string, VariantProps<typeof badgeVariants>["variant
   ABIERTA: "success",
   RECIBIDA: "success",
   PENDIENTE: "warning",
+  SOLICITADA: "warning",
   BORRADOR: "warning",
   DOCUMENTADA: "warning",
   ENVIADA: "warning",
