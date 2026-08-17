@@ -38,7 +38,7 @@ export interface NavItem {
  */
 export const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: null, implemented: true },
-  { label: "Sedes", href: "/sedes", icon: Building2, permission: "sedes.gestionar", implemented: false },
+  { label: "Sedes", href: "/sedes", icon: Building2, permission: "sedes.gestionar", implemented: true },
   { label: "Usuarios y roles", href: "/usuarios", icon: Users, permission: "usuarios.gestionar", implemented: false },
   { label: "Productos", href: "/productos", icon: Package, permission: "catalogo.leer", implemented: false },
   { label: "Servicios", href: "/servicios", icon: HeartHandshake, permission: "catalogo.leer", implemented: false },
