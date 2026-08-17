@@ -6,6 +6,7 @@ export interface Cash {
   sedeId: string;
   nombre: string;
   isActive: boolean;
+  openings: CashOpening[];
 }
 
 export interface CashOpening {

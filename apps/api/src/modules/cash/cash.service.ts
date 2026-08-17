@@ -45,6 +45,7 @@ export class CashService {
     const [data, total] = await Promise.all([
       this.prisma.cash.findMany({
         where,
+        include: { openings: { where: { estado: 'ABIERTA' }, take: 1 } },
         orderBy: { nombre: 'asc' },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
@@ -55,7 +56,10 @@ export class CashService {
   }
 
   async findOne(user: AuthenticatedUser, id: bigint) {
-    const caja = await this.prisma.cash.findUnique({ where: { id } });
+    const caja = await this.prisma.cash.findUnique({
+      where: { id },
+      include: { openings: { where: { estado: 'ABIERTA' }, take: 1 } },
+    });
     if (!caja)
       throw new NotFoundException({ code: 'CAJA_NO_ENCONTRADA', message: 'Caja no encontrada.' });
     this.sedeScopeService.assertSedeAccess(user, caja.sedeId);

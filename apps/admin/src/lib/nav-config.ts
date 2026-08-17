@@ -53,7 +53,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Financiamiento", href: "/financiamiento", icon: Landmark, permission: "financiamiento.gestionar", implemented: true },
   { label: "Cuentas por cobrar", href: "/cuentas-por-cobrar", icon: Wallet, permission: "financiamiento.gestionar", implemented: true },
   { label: "Pagos", href: "/pagos", icon: CreditCard, permission: "pagos.registrar", implemented: true },
-  { label: "Caja", href: "/caja", icon: Banknote, permission: "caja.operar", implemented: false },
+  { label: "Caja", href: "/caja", icon: Banknote, permission: "caja.operar", implemented: true },
   { label: "Reportes", href: "/reportes", icon: BarChart3, permission: "reportes.sede", implemented: false },
   { label: "Auditoría", href: "/auditoria", icon: ShieldCheck, permission: "auditoria.leer", implemented: false },
 ];
