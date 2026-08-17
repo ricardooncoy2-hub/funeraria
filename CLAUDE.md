@@ -68,7 +68,7 @@ Luego **Fase 1** empezando por `auth` + `authz` (RBAC + `SedeScopeGuard`), porqu
 
 ## 8. Frontend
 
-- Sigue `docs/15_frontend.md`. Si existe un **skill de diseño** para el frontend, aplícalo en las fases de UI (admin en Fase 1+, público en Fase 6).
+- Sigue `docs/15_frontend.md`. Si existe un **skill de diseño** para el frontend, aplícalo en las fases de UI (admin en Fase 6, público en Fase 7).
 - Si el skill de diseño y el `docs/15` difieren en tokens, tipografía o componentes, **no adivines**: unifícalos actualizando `docs/15` (o registrando la diferencia) para evitar dos fuentes de verdad.
 
 ## 9. Seguridad y datos personales
