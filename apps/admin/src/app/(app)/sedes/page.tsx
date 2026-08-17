@@ -79,11 +79,16 @@ export default function SedesPage() {
         </div>
       ),
     }),
-    columnHelper.accessor((row) => [row.departamento, row.provincia].filter(Boolean).join(" / "), {
-      id: "ubicacion",
-      header: "Ubicación",
-      cell: (info) => info.getValue() || <span className="text-neutral-400">—</span>,
-    }),
+    columnHelper.accessor(
+      (row) => [row.distrito?.nombre, row.distrito?.provincia.nombre, row.distrito?.provincia.departamento.nombre]
+        .filter(Boolean)
+        .join(" / "),
+      {
+        id: "ubicacion",
+        header: "Ubicación",
+        cell: (info) => info.getValue() || <span className="text-neutral-400">—</span>,
+      },
+    ),
     columnHelper.accessor("isActive", {
       header: "Estado",
       cell: (info) => <Badge variant={info.getValue() ? "success" : "neutral"}>{info.getValue() ? "Activa" : "Inactiva"}</Badge>,

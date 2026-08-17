@@ -33,24 +33,23 @@ model CompanyConfig {
 /// 10.2 — Sedes (sucursales). is_main_flag es columna generada por SQL
 /// (migración manual) para forzar una única sede principal (RB-024).
 model Branch {
-  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  codigo       String    @unique @db.VarChar(20)
-  nombre       String    @db.VarChar(150)
-  descripcion  String?   @db.VarChar(500)
-  direccion    String?   @db.VarChar(255)
-  departamento String?   @db.VarChar(100)
-  provincia    String?   @db.VarChar(100)
-  distrito     String?   @db.VarChar(100)
-  telefono     String?   @db.VarChar(30)
-  correo       String?   @db.VarChar(150)
-  isActive     Boolean   @default(true) @map("is_active")
-  isMain       Boolean   @default(false) @map("is_main")
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  codigo      String    @unique @db.VarChar(20)
+  nombre      String    @db.VarChar(150)
+  descripcion String?   @db.VarChar(500)
+  direccion   String?   @db.VarChar(255)
+  distritoId  BigInt?   @map("distrito_id") @db.UnsignedBigInt
+  telefono    String?   @db.VarChar(30)
+  correo      String?   @db.VarChar(150)
+  isActive    Boolean   @default(true) @map("is_active")
+  isMain      Boolean   @default(false) @map("is_main")
   /// Generada en SQL: 1 si is_main=1, NULL en caso contrario (ver migración).
-  isMainFlag   Int?      @map("is_main_flag") @db.TinyInt
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  deletedAt    DateTime? @map("deleted_at")
+  isMainFlag  Int?      @map("is_main_flag") @db.TinyInt
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
 
+  distrito             Distrito?    @relation(fields: [distritoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   userBranches         UserBranch[]
   branchServices       BranchService[]
   inventories          Inventory[]
@@ -69,6 +68,7 @@ model Branch {
   cashMovements        CashMovement[]
 
   @@unique([isMainFlag])
+  @@index([distritoId])
   @@map("sedes")
 }
 
@@ -333,16 +333,19 @@ model Customer {
   telefono        String?   @db.VarChar(30)
   correo          String?   @db.VarChar(150)
   direccion       String?   @db.VarChar(255)
+  distritoId      BigInt?   @map("distrito_id") @db.UnsignedBigInt
   isActive        Boolean   @default(true) @map("is_active")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
 
+  distrito   Distrito?   @relation(fields: [distritoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   sales      Sale[]
   financings Financing[]
   quotations Quotation[]
 
   @@unique([tipoDocumento, numeroDocumento])
+  @@index([distritoId])
   @@map("clientes")
 }
 
@@ -371,15 +374,61 @@ model Supplier {
   telefono        String?   @db.VarChar(30)
   correo          String?   @db.VarChar(150)
   direccion       String?   @db.VarChar(255)
+  distritoId      BigInt?   @map("distrito_id") @db.UnsignedBigInt
   isActive        Boolean   @default(true) @map("is_active")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
 
+  distrito  Distrito?  @relation(fields: [distritoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   purchases Purchase[]
 
   @@unique([tipoDocumento, numeroDocumento])
+  @@index([distritoId])
   @@map("proveedores")
+}
+
+/// 10.5b — Catálogo de ubigeo del Perú (ADR-019). Referencia pura, sembrada
+/// una vez desde datos INEI/RENIEC; toda entidad con dirección referencia
+/// un único distrito_id (departamento/provincia se derivan por la cadena,
+/// nunca se duplican como texto).
+model Departamento {
+  id     BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  codigo String @unique @db.VarChar(2)
+  nombre String @db.VarChar(100)
+
+  provincias Provincia[]
+
+  @@map("departamentos")
+}
+
+model Provincia {
+  id             BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  codigo         String @db.VarChar(4)
+  nombre         String @db.VarChar(100)
+  departamentoId BigInt @map("departamento_id") @db.UnsignedBigInt
+
+  departamento Departamento @relation(fields: [departamentoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  distritos    Distrito[]
+
+  @@unique([departamentoId, codigo])
+  @@index([departamentoId])
+  @@map("provincias")
+}
+
+model Distrito {
+  id          BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  codigo      String @unique @db.VarChar(6)
+  nombre      String @db.VarChar(100)
+  provinciaId BigInt @map("provincia_id") @db.UnsignedBigInt
+
+  provincia Provincia  @relation(fields: [provinciaId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  branches  Branch[]
+  customers Customer[]
+  suppliers Supplier[]
+
+  @@index([provinciaId])
+  @@map("distritos")
 }
 
 /// 10.6 — Inventario por sede (RB-002, ADR-008)

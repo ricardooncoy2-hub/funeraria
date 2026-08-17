@@ -26,6 +26,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { SalesModule } from './modules/sales/sales.module';
 import { ServicesModule } from './modules/services/services.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
+import { UbigeoModule } from './modules/ubigeo/ubigeo.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -50,6 +51,7 @@ import { PrismaModule } from './prisma/prisma.module';
       inject: [ConfigService],
     }),
     PrismaModule,
+    UbigeoModule,
     AuthzModule,
     AuthModule,
     UsersModule,

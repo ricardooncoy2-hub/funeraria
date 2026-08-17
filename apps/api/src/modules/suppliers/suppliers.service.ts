@@ -6,12 +6,16 @@ import {
   paginate,
 } from '../../common/dto/pagination-query.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UbigeoService } from '../ubigeo/ubigeo.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 
 @Injectable()
 export class SuppliersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ubigeoService: UbigeoService,
+  ) {}
 
   async findAll(query: PaginationQueryDto): Promise<PaginatedResult<unknown>> {
     const where: Prisma.SupplierWhereInput = {
@@ -64,12 +68,21 @@ export class SuppliersService {
         message: 'Ya existe un proveedor con ese tipo y número de documento.',
       });
     }
-    return this.prisma.supplier.create({ data: dto });
+    if (dto.distritoId) await this.ubigeoService.assertDistritoExists(BigInt(dto.distritoId));
+    const { distritoId, ...rest } = dto;
+    return this.prisma.supplier.create({
+      data: { ...rest, distritoId: distritoId ? BigInt(distritoId) : undefined },
+    });
   }
 
   async update(id: bigint, dto: UpdateSupplierDto) {
     await this.findOne(id);
-    return this.prisma.supplier.update({ where: { id }, data: dto });
+    if (dto.distritoId) await this.ubigeoService.assertDistritoExists(BigInt(dto.distritoId));
+    const { distritoId, ...rest } = dto;
+    return this.prisma.supplier.update({
+      where: { id },
+      data: { ...rest, distritoId: distritoId ? BigInt(distritoId) : undefined },
+    });
   }
 
   async remove(id: bigint): Promise<void> {

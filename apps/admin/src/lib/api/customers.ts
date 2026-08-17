@@ -14,6 +14,7 @@ export interface Customer {
   telefono: string | null;
   correo: string | null;
   direccion: string | null;
+  distritoId: string | null;
   isActive: boolean;
 }
 
@@ -25,6 +26,7 @@ export interface CustomerInput {
   telefono?: string;
   correo?: string;
   direccion?: string;
+  distritoId?: string;
 }
 
 export async function fetchCustomers(params: { q?: string; page?: number; pageSize?: number } = {}) {

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsIn, IsNumberString, IsOptional, IsString, MaxLength } from 'class-validator';
 
 const TIPOS_DOCUMENTO = ['DNI', 'CE', 'RUC'] as const;
 
@@ -41,4 +41,9 @@ export class CreateSupplierDto {
   @IsString()
   @MaxLength(255)
   direccion?: string;
+
+  @ApiPropertyOptional({ description: 'Distrito del catálogo de ubigeo (ADR-019)' })
+  @IsOptional()
+  @IsNumberString()
+  distritoId?: string;
 }

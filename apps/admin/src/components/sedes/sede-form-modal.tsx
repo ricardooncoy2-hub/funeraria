@@ -2,13 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/components/ui/banner";
 import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LocationSelect } from "@/components/ui/location-select";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { type Branch, type BranchInput, createBranch, updateBranch } from "@/lib/api/branches";
@@ -20,9 +21,7 @@ const schema = z.object({
   nombre: z.string().trim().min(1, "Ingrese un nombre.").max(150, "Máximo 150 caracteres."),
   descripcion: z.string().max(500).optional().or(z.literal("")),
   direccion: z.string().max(255).optional().or(z.literal("")),
-  departamento: z.string().max(100).optional().or(z.literal("")),
-  provincia: z.string().max(100).optional().or(z.literal("")),
-  distrito: z.string().max(100).optional().or(z.literal("")),
+  distritoId: z.string().optional().or(z.literal("")),
   telefono: z.string().max(30).optional().or(z.literal("")),
   correo: z.email("Correo inválido.").max(150).optional().or(z.literal("")),
 });
@@ -35,9 +34,7 @@ function toInput(values: FormValues): BranchInput {
     nombre: values.nombre,
     descripcion: values.descripcion || undefined,
     direccion: values.direccion || undefined,
-    departamento: values.departamento || undefined,
-    provincia: values.provincia || undefined,
-    distrito: values.distrito || undefined,
+    distritoId: values.distritoId || undefined,
     telefono: values.telefono || undefined,
     correo: values.correo || undefined,
   };
@@ -59,6 +56,7 @@ export function SedeFormModal({
     register,
     handleSubmit,
     reset,
+    control,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
@@ -70,9 +68,7 @@ export function SedeFormModal({
       nombre: sede?.nombre ?? "",
       descripcion: sede?.descripcion ?? "",
       direccion: sede?.direccion ?? "",
-      departamento: sede?.departamento ?? "",
-      provincia: sede?.provincia ?? "",
-      distrito: sede?.distrito ?? "",
+      distritoId: sede?.distritoId ?? "",
       telefono: sede?.telefono ?? "",
       correo: sede?.correo ?? "",
     });
@@ -121,19 +117,15 @@ export function SedeFormModal({
           <Input id="direccion" {...register("direccion")} />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <Label htmlFor="departamento">Departamento (opcional)</Label>
-            <Input id="departamento" {...register("departamento")} />
-          </div>
-          <div>
-            <Label htmlFor="provincia">Provincia (opcional)</Label>
-            <Input id="provincia" {...register("provincia")} />
-          </div>
-          <div>
-            <Label htmlFor="distrito">Distrito (opcional)</Label>
-            <Input id="distrito" {...register("distrito")} />
-          </div>
+        <div>
+          <Label>Ubicación (opcional)</Label>
+          <Controller
+            control={control}
+            name="distritoId"
+            render={({ field }) => (
+              <LocationSelect value={field.value || undefined} onChange={(v) => field.onChange(v ?? "")} />
+            )}
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

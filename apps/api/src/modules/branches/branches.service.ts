@@ -11,12 +11,21 @@ import {
   paginate,
 } from '../../common/dto/pagination-query.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UbigeoService } from '../ubigeo/ubigeo.service';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { UpdateBranchDto } from './dto/update-branch.dto';
 
+/** Cadena completa para mostrar la ubicación sin ida y vuelta adicional al front. */
+const DISTRITO_INCLUDE = {
+  distrito: { include: { provincia: { include: { departamento: true } } } },
+} satisfies Prisma.BranchInclude;
+
 @Injectable()
 export class BranchesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ubigeoService: UbigeoService,
+  ) {}
 
   async findAll(query: PaginationQueryDto): Promise<PaginatedResult<unknown>> {
     const where: Prisma.BranchWhereInput = {
@@ -29,6 +38,7 @@ export class BranchesService {
     const [data, total] = await Promise.all([
       this.prisma.branch.findMany({
         where,
+        include: DISTRITO_INCLUDE,
         orderBy: { nombre: 'asc' },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
@@ -40,7 +50,10 @@ export class BranchesService {
   }
 
   async findOne(id: bigint) {
-    const branch = await this.prisma.branch.findFirst({ where: { id, deletedAt: null } });
+    const branch = await this.prisma.branch.findFirst({
+      where: { id, deletedAt: null },
+      include: DISTRITO_INCLUDE,
+    });
     if (!branch)
       throw new NotFoundException({ code: 'SEDE_NO_ENCONTRADA', message: 'Sede no encontrada.' });
     return branch;
@@ -56,12 +69,23 @@ export class BranchesService {
         message: 'Ya existe una sede con ese código.',
       });
     }
-    return this.prisma.branch.create({ data: { ...dto, isMain: false } });
+    if (dto.distritoId) await this.ubigeoService.assertDistritoExists(BigInt(dto.distritoId));
+    const { distritoId, ...rest } = dto;
+    return this.prisma.branch.create({
+      data: { ...rest, isMain: false, distritoId: distritoId ? BigInt(distritoId) : undefined },
+      include: DISTRITO_INCLUDE,
+    });
   }
 
   async update(id: bigint, dto: UpdateBranchDto) {
     await this.findOne(id);
-    return this.prisma.branch.update({ where: { id }, data: dto });
+    if (dto.distritoId) await this.ubigeoService.assertDistritoExists(BigInt(dto.distritoId));
+    const { distritoId, ...rest } = dto;
+    return this.prisma.branch.update({
+      where: { id },
+      data: { ...rest, distritoId: distritoId ? BigInt(distritoId) : undefined },
+      include: DISTRITO_INCLUDE,
+    });
   }
 
   /** RF-022: no se permite borrado físico ni desactivar la sede principal. */

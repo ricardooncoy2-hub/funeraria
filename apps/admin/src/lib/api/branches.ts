@@ -1,4 +1,5 @@
 import type { PaginatedResult } from "./types";
+import type { Departamento, Distrito, Provincia } from "./ubigeo";
 import { apiFetch } from "./client";
 
 export interface Branch {
@@ -7,9 +8,8 @@ export interface Branch {
   nombre: string;
   descripcion: string | null;
   direccion: string | null;
-  departamento: string | null;
-  provincia: string | null;
-  distrito: string | null;
+  distritoId: string | null;
+  distrito: (Distrito & { provincia: Provincia & { departamento: Departamento } }) | null;
   telefono: string | null;
   correo: string | null;
   isActive: boolean;
@@ -21,9 +21,7 @@ export interface BranchInput {
   nombre: string;
   descripcion?: string;
   direccion?: string;
-  departamento?: string;
-  provincia?: string;
-  distrito?: string;
+  distritoId?: string;
   telefono?: string;
   correo?: string;
 }

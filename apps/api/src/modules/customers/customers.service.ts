@@ -6,12 +6,16 @@ import {
   paginate,
 } from '../../common/dto/pagination-query.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UbigeoService } from '../ubigeo/ubigeo.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 
 @Injectable()
 export class CustomersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ubigeoService: UbigeoService,
+  ) {}
 
   async findAll(query: PaginationQueryDto): Promise<PaginatedResult<unknown>> {
     const where: Prisma.CustomerWhereInput = {
@@ -65,12 +69,21 @@ export class CustomersService {
         message: 'Ya existe un cliente con ese tipo y número de documento.',
       });
     }
-    return this.prisma.customer.create({ data: dto });
+    if (dto.distritoId) await this.ubigeoService.assertDistritoExists(BigInt(dto.distritoId));
+    const { distritoId, ...rest } = dto;
+    return this.prisma.customer.create({
+      data: { ...rest, distritoId: distritoId ? BigInt(distritoId) : undefined },
+    });
   }
 
   async update(id: bigint, dto: UpdateCustomerDto) {
     await this.findOne(id);
-    return this.prisma.customer.update({ where: { id }, data: dto });
+    if (dto.distritoId) await this.ubigeoService.assertDistritoExists(BigInt(dto.distritoId));
+    const { distritoId, ...rest } = dto;
+    return this.prisma.customer.update({
+      where: { id },
+      data: { ...rest, distritoId: distritoId ? BigInt(distritoId) : undefined },
+    });
   }
 
   async remove(id: bigint): Promise<void> {

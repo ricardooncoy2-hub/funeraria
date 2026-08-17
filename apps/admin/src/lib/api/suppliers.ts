@@ -10,6 +10,7 @@ export interface Supplier {
   telefono: string | null;
   correo: string | null;
   direccion: string | null;
+  distritoId: string | null;
   isActive: boolean;
 }
 
@@ -21,6 +22,7 @@ export interface SupplierInput {
   telefono?: string;
   correo?: string;
   direccion?: string;
+  distritoId?: string;
 }
 
 export async function fetchAllSuppliers(): Promise<Supplier[]> {

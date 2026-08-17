@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import path from 'node:path';
+import fs from 'node:fs';
 import bcrypt from 'bcryptjs';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { PrismaClient } from '@prisma/client';
@@ -222,7 +224,65 @@ const PAYMENT_METHODS = [
   { codigo: 'OTROS', nombre: 'Otros', esEfectivo: false },
 ] as const;
 
+interface UbigeoData {
+  departamentos: { codigo: string; nombre: string }[];
+  provincias: { codigo: string; nombre: string; departamentoCodigo: string }[];
+  distritos: { codigo: string; nombre: string; provinciaCodigo: string }[];
+}
+
+/**
+ * Catálogo de ubigeo del Perú (ADR-019). Fuente: jmcastagnetto/ubigeo-peru-aumentado
+ * (MIT, metodología INEI/RENIEC), procesado a `prisma/data/ubigeo.json` — 25
+ * departamentos, 196 provincias, 1892 distritos (coincide con la cifra
+ * vigente de INEI). `createMany` en vez de `upsert` uno-por-uno: es catálogo
+ * de referencia puro que solo necesita existir, no actualizarse fila a fila.
+ */
+async function seedUbigeo(): Promise<void> {
+  const existing = await prisma.departamento.count();
+  if (existing > 0) return;
+
+  const raw = fs.readFileSync(path.join(__dirname, 'data', 'ubigeo.json'), 'utf8');
+  const data = JSON.parse(raw) as UbigeoData;
+
+  await prisma.departamento.createMany({
+    data: data.departamentos.map((d) => ({ codigo: d.codigo, nombre: d.nombre })),
+    skipDuplicates: true,
+  });
+  const departamentos = await prisma.departamento.findMany({ select: { id: true, codigo: true } });
+  const departamentoIdByCodigo = new Map(departamentos.map((d) => [d.codigo, d.id]));
+
+  await prisma.provincia.createMany({
+    data: data.provincias
+      .map((p) => {
+        const departamentoId = departamentoIdByCodigo.get(p.departamentoCodigo);
+        if (!departamentoId) return null;
+        return { codigo: p.codigo, nombre: p.nombre, departamentoId };
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null),
+    skipDuplicates: true,
+  });
+  const provincias = await prisma.provincia.findMany({ select: { id: true, codigo: true } });
+  const provinciaIdByCodigo = new Map(provincias.map((p) => [p.codigo, p.id]));
+
+  await prisma.distrito.createMany({
+    data: data.distritos
+      .map((d) => {
+        const provinciaId = provinciaIdByCodigo.get(d.provinciaCodigo);
+        if (!provinciaId) return null;
+        return { codigo: d.codigo, nombre: d.nombre, provinciaId };
+      })
+      .filter((d): d is NonNullable<typeof d> => d !== null),
+    skipDuplicates: true,
+  });
+
+  console.log(
+    `  Ubigeo: ${departamentos.length} departamentos, ${provincias.length} provincias, ${data.distritos.length} distritos.`,
+  );
+}
+
 async function main() {
+  await seedUbigeo();
+
   await prisma.companyConfig.upsert({
     where: { id: 1n },
     update: {},

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsNumberString, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateBranchDto {
   @ApiProperty({ maxLength: 20 })
@@ -24,23 +24,10 @@ export class CreateBranchDto {
   @MaxLength(255)
   direccion?: string;
 
-  @ApiPropertyOptional({ maxLength: 100 })
+  @ApiPropertyOptional({ description: 'Distrito del catálogo de ubigeo (ADR-019)' })
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  departamento?: string;
-
-  @ApiPropertyOptional({ maxLength: 100 })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  provincia?: string;
-
-  @ApiPropertyOptional({ maxLength: 100 })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  distrito?: string;
+  @IsNumberString()
+  distritoId?: string;
 
   @ApiPropertyOptional({ maxLength: 30 })
   @IsOptional()

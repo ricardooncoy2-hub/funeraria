@@ -42,16 +42,43 @@ Fila única (id=1) con parámetros globales.
 | codigo | VARCHAR(20) | UNIQUE, p.ej. 'PRIN','CARAZ' |
 | nombre | VARCHAR(150) | |
 | descripcion | VARCHAR(500) NULL | |
-| direccion | VARCHAR(255) NULL | |
-| departamento | VARCHAR(100) NULL | |
-| provincia | VARCHAR(100) NULL | |
-| distrito | VARCHAR(100) NULL | |
+| direccion | VARCHAR(255) NULL | calle/número, texto libre |
+| distrito_id | BIGINT UNSIGNED NULL | FK `distritos.id` `ON DELETE RESTRICT`; departamento/provincia se derivan por la cadena `distrito → provincia → departamento` (ver §10.2.1, ADR-019) |
 | telefono | VARCHAR(30) NULL | |
 | correo | VARCHAR(150) NULL | |
 | is_active | TINYINT(1) | default 1 |
 | is_main | TINYINT(1) | default 0 |
 | is_main_flag | TINYINT(1) generada | `= 1 IF is_main ELSE NULL`; `UNIQUE` para forzar única principal (RB-024) |
 | created_at / updated_at / deleted_at | DATETIME | |
+
+## 10.2.1 Catálogo de ubigeo (departamento/provincia/distrito)
+
+Catálogo normalizado y de solo lectura, poblado por seed desde datos INEI/RENIEC (ver ADR-019), reutilizado por toda entidad que registre una ubicación (`sedes`, `clientes`, `proveedores`; ver §10.5). Cada entidad guarda un único FK `distrito_id` — nunca texto libre ni los tres niveles por separado — por lo que es imposible persistir una combinación departamento/provincia/distrito inconsistente.
+
+### `departamentos`
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | BIGINT UNSIGNED PK | |
+| codigo | VARCHAR(2) | UNIQUE, código INEI (p. ej. '01') |
+| nombre | VARCHAR(100) | |
+
+### `provincias`
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | BIGINT UNSIGNED PK | |
+| codigo | VARCHAR(4) | código INEI (p. ej. '0101'); `UNIQUE(departamento_id, codigo)` |
+| nombre | VARCHAR(100) | |
+| departamento_id | BIGINT UNSIGNED | FK `departamentos.id` `ON DELETE RESTRICT` |
+
+### `distritos`
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | BIGINT UNSIGNED PK | |
+| codigo | VARCHAR(6) | UNIQUE, código INEI (p. ej. '010101') |
+| nombre | VARCHAR(100) | |
+| provincia_id | BIGINT UNSIGNED | FK `provincias.id` `ON DELETE RESTRICT` |
+
+> Fuente de datos: `jmcastagnetto/ubigeo-peru-aumentado` (MIT). 25 departamentos / 196 provincias / 1892 distritos. Es una foto de datos en el tiempo — si el INEI crea distritos nuevos, requiere re-seed puntual (ver ADR-019, sección Consecuencias).
 
 Restricciones: `UNIQUE(codigo)`, `UNIQUE(is_main_flag)`. Validación transaccional adicional al cambiar la principal.
 
@@ -153,7 +180,7 @@ Restricciones: `UNIQUE(codigo)`, `UNIQUE(is_main_flag)`. Validación transaccion
 ## 10.5 Corporativo — Terceros
 
 ### `proveedores`
-| id | tipo_documento VARCHAR(10) | numero_documento VARCHAR(20) | razon_social VARCHAR(200) | nombre_comercial NULL | telefono | correo | direccion NULL | is_active | timestamps + deleted_at | UNIQUE(tipo_documento, numero_documento) |
+| id | tipo_documento VARCHAR(10) | numero_documento VARCHAR(20) | razon_social VARCHAR(200) | nombre_comercial NULL | telefono | correo | direccion NULL | distrito_id BIGINT UNSIGNED NULL (FK `distritos.id`, ver §10.2.1) | is_active | timestamps + deleted_at | UNIQUE(tipo_documento, numero_documento) |
 
 ### `financiadores` (RB-012)
 | Columna | Tipo | Notas |
@@ -181,6 +208,7 @@ Restricciones: `UNIQUE(codigo)`, `UNIQUE(is_main_flag)`. Validación transaccion
 | telefono | VARCHAR(30) NULL | |
 | correo | VARCHAR(150) NULL | |
 | direccion | VARCHAR(255) NULL | |
+| distrito_id | BIGINT UNSIGNED NULL | FK `distritos.id`, ver §10.2.1 |
 | is_active | TINYINT(1) | |
 | timestamps + deleted_at | | UNIQUE(tipo_documento, numero_documento) |
 

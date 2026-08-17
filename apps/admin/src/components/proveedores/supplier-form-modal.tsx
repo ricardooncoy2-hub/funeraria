@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LocationSelect } from "@/components/ui/location-select";
 import { Modal } from "@/components/ui/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ApiError } from "@/lib/api/client";
@@ -25,6 +26,7 @@ const schema = z.object({
   telefono: z.string().max(30).optional().or(z.literal("")),
   correo: z.email("Correo inválido.").max(150).optional().or(z.literal("")),
   direccion: z.string().max(255).optional().or(z.literal("")),
+  distritoId: z.string().optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -59,6 +61,7 @@ export function SupplierFormModal({
       telefono: supplier?.telefono ?? "",
       correo: supplier?.correo ?? "",
       direccion: supplier?.direccion ?? "",
+      distritoId: supplier?.distritoId ?? "",
     });
   }, [open, supplier, reset]);
 
@@ -70,6 +73,7 @@ export function SupplierFormModal({
         telefono: values.telefono || undefined,
         correo: values.correo || undefined,
         direccion: values.direccion || undefined,
+        distritoId: values.distritoId || undefined,
       };
       if (supplier) {
         await updateSupplier(supplier.id, input);
@@ -144,6 +148,17 @@ export function SupplierFormModal({
         <div>
           <Label htmlFor="direccion">Dirección (opcional)</Label>
           <Input id="direccion" {...register("direccion")} />
+        </div>
+
+        <div>
+          <Label>Ubicación (opcional)</Label>
+          <Controller
+            control={control}
+            name="distritoId"
+            render={({ field }) => (
+              <LocationSelect value={field.value || undefined} onChange={(v) => field.onChange(v ?? "")} />
+            )}
+          />
         </div>
 
         {errors.root && <Banner variant="danger">{errors.root.message}</Banner>}
