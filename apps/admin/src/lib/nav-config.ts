@@ -45,7 +45,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Planes", href: "/planes", icon: ClipboardList, permission: "catalogo.leer", implemented: true },
   { label: "Proveedores", href: "/proveedores", icon: Truck, permission: "compras.gestionar", implemented: true },
   { label: "Compras", href: "/compras", icon: ShoppingCart, permission: "compras.gestionar", implemented: false },
-  { label: "Inventario", href: "/inventario", icon: Warehouse, permission: "inventario.leer", implemented: false },
+  { label: "Inventario", href: "/inventario", icon: Warehouse, permission: "inventario.leer", implemented: true },
   { label: "Transferencias", href: "/transferencias", icon: ArrowLeftRight, permission: "transferencias.solicitar", implemented: false },
   { label: "Clientes", href: "/clientes", icon: UserSquare2, permission: "ventas.crear", implemented: true },
   { label: "Cotizaciones", href: "/cotizaciones", icon: FileText, permission: "cotizaciones.gestionar", implemented: false },
