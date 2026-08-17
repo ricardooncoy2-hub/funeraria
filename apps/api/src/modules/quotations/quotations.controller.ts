@@ -25,8 +25,8 @@ export class QuotationsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Detalle de una cotización' })
-  findOne(@Param('id', ParseBigIntPipe) id: bigint) {
-    return this.quotationsService.findOne(id);
+  findOne(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseBigIntPipe) id: bigint) {
+    return this.quotationsService.findOne(user, id);
   }
 
   @Post()
@@ -37,20 +37,32 @@ export class QuotationsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Edita datos de la cotización' })
-  update(@Param('id', ParseBigIntPipe) id: bigint, @Body() dto: UpdateQuotationDto) {
-    return this.quotationsService.update(id, dto);
+  update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseBigIntPipe) id: bigint,
+    @Body() dto: UpdateQuotationDto,
+  ) {
+    return this.quotationsService.update(user, id, dto);
   }
 
   @Post(':id/asignar')
   @ApiOperation({ summary: 'Asigna la cotización a una sede (RF-084)' })
-  asignar(@Param('id', ParseBigIntPipe) id: bigint, @Body() dto: AssignQuotationDto) {
-    return this.quotationsService.asignar(id, dto);
+  asignar(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseBigIntPipe) id: bigint,
+    @Body() dto: AssignQuotationDto,
+  ) {
+    return this.quotationsService.asignar(user, id, dto);
   }
 
   @Patch(':id/estado')
   @ApiOperation({ summary: 'Cambia el estado de la cotización (docs/23 §23.3)' })
-  setStatus(@Param('id', ParseBigIntPipe) id: bigint, @Body() dto: SetQuotationStatusDto) {
-    return this.quotationsService.setStatus(id, dto);
+  setStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseBigIntPipe) id: bigint,
+    @Body() dto: SetQuotationStatusDto,
+  ) {
+    return this.quotationsService.setStatus(user, id, dto);
   }
 
   @Permissions('ventas.crear')

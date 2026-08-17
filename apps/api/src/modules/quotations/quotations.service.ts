@@ -56,6 +56,10 @@ export class QuotationsService {
     const [data, total] = await Promise.all([
       this.prisma.quotation.findMany({
         where,
+        include: {
+          sedeAsignada: { select: { id: true, nombre: true } },
+          sedePreferida: { select: { id: true, nombre: true } },
+        },
         orderBy: { fecha: 'desc' },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
@@ -66,13 +70,18 @@ export class QuotationsService {
     return paginate(data, total, query.page, query.pageSize);
   }
 
-  async findOne(id: bigint) {
+  /** Sin sede asignada aún: visible para cualquier usuario con permiso de
+   * gestión (triage, RF-084). Con sede asignada, se restringe a las sedes
+   * autorizadas del usuario, igual que findAll. */
+  async findOne(user: AuthenticatedUser, id: bigint) {
     const quotation = await this.prisma.quotation.findFirst({
       where: { id, deletedAt: null },
       include: {
         cliente: true,
         items: { include: { producto: true, servicio: true } },
         plan: true,
+        sedePreferida: { select: { id: true, nombre: true } },
+        sedeAsignada: { select: { id: true, nombre: true } },
       },
     });
     if (!quotation)
@@ -80,6 +89,9 @@ export class QuotationsService {
         code: 'COTIZACION_NO_ENCONTRADA',
         message: 'Cotización no encontrada.',
       });
+    if (quotation.sedeAsignadaId) {
+      this.sedeScopeService.assertSedeAccess(user, quotation.sedeAsignadaId);
+    }
     return quotation;
   }
 
@@ -128,8 +140,8 @@ export class QuotationsService {
     });
   }
 
-  async update(id: bigint, dto: UpdateQuotationDto) {
-    await this.findOne(id);
+  async update(user: AuthenticatedUser, id: bigint, dto: UpdateQuotationDto) {
+    await this.findOne(user, id);
     return this.prisma.quotation.update({
       where: { id },
       data: {
@@ -144,8 +156,8 @@ export class QuotationsService {
   }
 
   /** RF-084: EN_REVISION -> ASIGNADA */
-  async asignar(id: bigint, dto: AssignQuotationDto) {
-    const quotation = await this.findOne(id);
+  async asignar(user: AuthenticatedUser, id: bigint, dto: AssignQuotationDto) {
+    const quotation = await this.findOne(user, id);
     this.assertTransition(quotation.estado as QuotationState, 'ASIGNADA');
 
     const sede = await this.prisma.branch.findFirst({
@@ -164,15 +176,15 @@ export class QuotationsService {
     });
   }
 
-  async setStatus(id: bigint, dto: SetQuotationStatusDto) {
-    const quotation = await this.findOne(id);
+  async setStatus(user: AuthenticatedUser, id: bigint, dto: SetQuotationStatusDto) {
+    const quotation = await this.findOne(user, id);
     this.assertTransition(quotation.estado as QuotationState, dto.estado);
     return this.prisma.quotation.update({ where: { id }, data: { estado: dto.estado } });
   }
 
   /** docs/23 §23.6 (RF-085/CA-QUO-02): hereda cliente e ítems; la venta guarda cotizacion_id. */
   async convertirVenta(user: AuthenticatedUser, id: bigint) {
-    const quotation = await this.findOne(id);
+    const quotation = await this.findOne(user, id);
     if (quotation.estado !== 'ACEPTADA') {
       throw new ConflictException({
         code: 'COTIZACION_NO_CONVERTIBLE',

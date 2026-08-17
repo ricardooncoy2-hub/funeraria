@@ -31,6 +31,7 @@ const ESTADO_VARIANT: Record<string, VariantProps<typeof badgeVariants>["variant
   PAGADA: "success",
   ABIERTA: "success",
   RECIBIDA: "success",
+  ACEPTADA: "success",
   PENDIENTE: "warning",
   SOLICITADA: "warning",
   BORRADOR: "warning",
@@ -39,12 +40,17 @@ const ESTADO_VARIANT: Record<string, VariantProps<typeof badgeVariants>["variant
   OBSERVADA: "warning",
   PARCIALMENTE_PAGADA: "warning",
   EN_TRANSITO: "warning",
+  EN_REVISION: "warning",
+  ASIGNADA: "warning",
+  CONTACTADA: "warning",
+  EN_NEGOCIACION: "warning",
   ANULADA: "danger",
   ANULADO: "danger",
   RECHAZADA: "danger",
   CANCELADA: "neutral",
   CERRADA: "neutral",
   INACTIVO: "neutral",
+  VENCIDA: "neutral",
 };
 
 export function EstadoBadge({ estado, className }: { estado: string; className?: string }) {
