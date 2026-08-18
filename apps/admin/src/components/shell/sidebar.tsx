@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronsLeft, ChevronsRight, X } from "lucide-react";
+import { ChevronDown, ChevronsLeft, ChevronsRight, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS } from "@/lib/nav-config";
+import { type NavGroup, type NavItem, NAV_GROUPS } from "@/lib/nav-config";
 import { hasPermission, useAuthStore } from "@/lib/auth/auth-store";
 import { useUiStore } from "@/lib/ui/ui-store";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ function NavLink({
   active,
   onNavigate,
 }: {
-  item: (typeof NAV_ITEMS)[number];
+  item: NavItem;
   collapsed: boolean;
   active: boolean;
   onNavigate: () => void;
@@ -55,19 +55,95 @@ function NavLink({
   );
 }
 
+/**
+ * Un grupo del sidebar. La agrupación es solo presentación/orden — cada
+ * `NavItem` ya viene filtrado por su propio permiso antes de llegar acá
+ * (`SidebarContent`), así que un grupo nunca decide qué se ve, solo cómo se
+ * organiza visualmente lo que ya se decidió mostrar.
+ */
+function NavGroupSection({
+  group,
+  collapsed,
+  pathname,
+  onNavigate,
+}: {
+  group: NavGroup;
+  collapsed: boolean;
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  const containsActive = group.items.some((item) => item.href === pathname);
+  const manuallyCollapsed = useUiStore((s) => (group.label ? s.collapsedNavGroups[group.label] : false));
+  const toggleNavGroup = useUiStore((s) => s.toggleNavGroup);
+
+  // Ítems sueltos (Dashboard, Reportes) o sidebar en modo solo-íconos: sin
+  // encabezado ni acordeón, se listan directo (no hay espacio para rótulos
+  // de grupo en 64px de ancho).
+  if (!group.label || collapsed) {
+    return (
+      <>
+        {group.items.map((item) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            collapsed={collapsed}
+            active={pathname === item.href}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </>
+    );
+  }
+
+  // La ruta activa siempre gana: un grupo colapsado nunca esconde la página
+  // en la que el usuario ya está.
+  const open = containsActive || !manuallyCollapsed;
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => toggleNavGroup(group.label as string)}
+        className="flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold tracking-wide text-neutral-500 uppercase hover:text-neutral-700"
+        aria-expanded={open}
+      >
+        <span>{group.label}</span>
+        <ChevronDown className={cn("size-3.5 shrink-0 transition-transform", !open && "-rotate-90")} aria-hidden />
+      </button>
+      {open && (
+        <div className="flex flex-col gap-1">
+          {group.items.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              collapsed={collapsed}
+              active={pathname === item.href}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SidebarContent({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: () => void }) {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
-  const items = NAV_ITEMS.filter((item) => !item.permission || hasPermission(user, item.permission));
+
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.permission || hasPermission(user, item.permission)),
+  })).filter((group) => group.items.length > 0);
 
   return (
     <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3" aria-label="Navegación principal">
-      {items.map((item) => (
-        <NavLink
-          key={item.href}
-          item={item}
+      {groups.map((group) => (
+        <NavGroupSection
+          key={group.label ?? group.items[0]?.href}
+          group={group}
           collapsed={collapsed}
-          active={pathname === item.href}
+          pathname={pathname}
           onNavigate={onNavigate}
         />
       ))}

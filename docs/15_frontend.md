@@ -45,31 +45,35 @@ SEO, mobile-first, performance y accesibilidad (ver [32](32_seo.md) y RNF-003/06
 - Guardado de sesión y `me` (roles + sedes) en un store (Zustand o React Context). El **selector de sede activa** filtra vistas según sedes autorizadas.
 
 ### Layout
-- Barra lateral por módulos (según permisos), topbar con selector de sede y usuario, breadcrumbs.
-- Los ítems de menú se muestran/ocultan según permisos del usuario (defensa en UX; la seguridad real está en backend).
+- Barra lateral con ítems agrupados por proceso de negocio (ver tabla de grupos abajo), topbar con selector de sede y usuario, breadcrumbs.
+- Los ítems de menú se muestran/ocultan según permisos del usuario, **cada uno de forma individual** (defensa en UX; la seguridad real está en backend).
+- **La agrupación del sidebar es puramente de presentación y orden** (facilitar el escaneo visual), no un control de acceso: no existe permiso a nivel de grupo. Un grupo se pinta si al menos uno de sus ítems pasó el filtro de permisos de su propio ítem; nunca oculta ni expone nada por sí mismo. Los grupos se muestran como secciones plegables tipo acordeón (expandidas por defecto — "reducir pasos, no ocultarlos"); si la ruta activa cae dentro de un grupo colapsado manualmente, ese grupo se fuerza a abierto para no esconder la página en la que está el usuario. Implementación: `apps/admin/src/lib/nav-config.ts` (`NAV_GROUPS`) y `apps/admin/src/components/shell/sidebar.tsx`.
 
 ### Módulos/pantallas
-| Sección | Pantallas |
-|---|---|
-| Dashboard | KPIs por sede: ventas del día, stock bajo, CxC, caja abierta |
-| Sedes | Lista, alta/edición, marcar principal |
-| Usuarios y roles | Usuarios, asignación de sedes/roles, roles y permisos |
-| Productos | Catálogo, categorías |
-| Servicios | Servicios, disponibilidad y precio por sede |
-| Planes | Planes y componentes |
-| Proveedores | CRUD |
-| Compras | Registro, recepción, detalle |
-| Inventario | Stock por sede, kardex, ajustes, stock bajo |
-| Transferencias | Solicitud, aprobación, envío, recepción |
-| Clientes | CRUD, historial |
-| Cotizaciones | Bandeja, asignación, conversión a venta |
-| Ventas | Nueva venta (wizard), listado, estado de cuenta, anulación |
-| Financiamiento | Financiadores, coberturas, estados |
-| Cuentas por cobrar | Saldos por financiador, antigüedad |
-| Pagos | Registro de pagos (efectivo/electrónico), anulación |
-| Caja | Apertura, movimientos, cierre/arqueo |
-| Reportes | Por sede y consolidados, exportación |
-| Auditoría | Consulta de eventos |
+
+| Grupo (sidebar) | Sección | Pantallas |
+|---|---|---|
+| *(suelto, sin grupo)* | Dashboard | KPIs por sede: ventas del día, stock bajo, CxC, caja abierta |
+| Ventas | Clientes | CRUD, historial |
+| Ventas | Cotizaciones | Bandeja, asignación, conversión a venta |
+| Ventas | Ventas | Nueva venta (wizard), listado, estado de cuenta, anulación |
+| Ventas | Servicios | Servicios, disponibilidad y precio por sede |
+| Ventas | Planes | Planes y componentes |
+| Finanzas | Financiamiento | Financiadores, coberturas, estados |
+| Finanzas | Cuentas por cobrar | Saldos por financiador, antigüedad |
+| Finanzas | Pagos | Registro de pagos (efectivo/electrónico), anulación |
+| Finanzas | Caja | Apertura, movimientos, cierre/arqueo |
+| Compras e inventario | Proveedores | CRUD |
+| Compras e inventario | Compras | Registro, recepción, detalle |
+| Compras e inventario | Inventario | Stock por sede, kardex, ajustes, stock bajo |
+| Compras e inventario | Transferencias | Solicitud, aprobación, envío, recepción |
+| Compras e inventario | Productos | Catálogo, categorías |
+| Administración | Sedes | Lista, alta/edición, marcar principal |
+| Administración | Usuarios y roles | Usuarios, asignación de sedes/roles, roles y permisos |
+| Administración | Auditoría | Consulta de eventos |
+| *(suelto, sin grupo)* | Reportes | Por sede y consolidados, exportación |
+
+> **Nota sobre la agrupación:** Productos convive con Inventario (no con Servicios/Planes) porque es el único de los tres con seguimiento real de stock (kardex, ajustes, transferencias); Servicios y Planes no se stockean, por eso quedan con el resto del flujo de venta. Dashboard y Reportes quedan sueltos porque su audiencia de permisos (todos los roles autenticados / `reportes.sede`, respectivamente) no coincide con la de ningún otro grupo — forzarlos a compartir encabezado con otro ítem generaría un rótulo que no describe lo que ese rol realmente ve ahí.
 
 ### Flujo destacado: wizard de venta
 1. Sede de venta (según acceso) + cliente.
