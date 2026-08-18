@@ -91,7 +91,7 @@ function UserMenu() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-md p-1.5 hover:bg-neutral-100"
+        className="flex items-center gap-2 rounded-md p-1.5 hover:bg-brand-200"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -128,11 +128,11 @@ export function Topbar() {
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-4">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-brand-200 bg-brand-100 px-4">
       <button
         type="button"
         onClick={() => setMobileNavOpen(true)}
-        className="rounded-md p-2 text-neutral-700 hover:bg-neutral-100 lg:hidden"
+        className="rounded-md p-2 text-neutral-700 hover:bg-brand-200 lg:hidden"
         aria-label="Abrir menú"
       >
         <Menu className="size-5" aria-hidden />
