@@ -28,7 +28,7 @@ Esto determina el tono de todo lo que sigue: **sobriedad, claridad y eficiencia 
 2. **Confianza por claridad, no por decoración.** La confianza se construye con jerarquía clara, información correcta, estados de carga honestos y ausencia de callejones sin salida — no con insignias, iconos de "garantía" o texto en mayúsculas.
 3. **Mobile-first, siempre.** Se diseña primero para el celular (la mayoría del tráfico público llega desde ahí, a menudo en movimiento o con señal débil) y se expande hacia tablet/escritorio. Nunca al revés.
 4. **Reducir pasos, no ocultarlos.** UX orientada a completar tareas frecuentes (registrar una venta, un pago, abrir caja) en el menor número de clics/pantallas posible, sin esconder información crítica para lograrlo.
-5. **Un solo acento de color.** El azul de marca (§3) es el único color que se usa para llamar la atención (acciones primarias, enlaces, foco). Todo lo demás vive en la escala de grises + colores semánticos reservados exclusivamente para estado (§18).
+5. **Un solo acento *funcional*.** El azul de marca (§3) es el único color que comunica interacción o llama la atención (acciones primarias, enlaces, foco). El dorado (§3.6) es un acento **puramente decorativo** —líneas, bordes de acento, detalle editorial del sitio público— que nunca comunica estado ni interacción, nunca aparece en las superficies operativas del admin, y nunca compite con el azul por el rol de "esto es accionable". Todo lo demás vive en la escala de grises + colores semánticos reservados exclusivamente para estado (§18).
 6. **Consistencia por encima de creatividad local.** Un mismo componente (botón, tabla, card, badge de estado) se ve y comporta igual en toda la aplicación y entre `apps/web` y `apps/admin`, salvo las diferencias de contexto descritas en §20–21.
 7. **Todo estado es visible.** Ninguna acción se queda "muda": todo fetch, envío de formulario o mutación tiene estados de carga/éxito/error explícitos (§18).
 
@@ -60,20 +60,22 @@ Confianza · Respeto · Serenidad · Profesionalismo · Cercanía · Calidad de 
 Metodología: una sola familia de marca (azul del logo) definida en HSL con matiz fijo y variaciones sistemáticas de saturación/luminosidad, más una escala neutra y colores semánticos de estado. Valores completos y listos para copiar en [`references/tokens.md`](references/tokens.md#colores).
 
 ### 3.1 Azul de marca ("Azul Minaya")
-Extraído del logotipo (azul ultramar saturado). Matiz de referencia: **H 241°**. Es el **único** color de acento del sistema.
+Índigo del logotipo (`apps/admin/public/logo-minaya.png`), cuyo azul crudo es `#0004B1` = `hsl(239 100% 35%)` — un ultramar a saturación máxima. Ese valor es **demasiado eléctrico** para el tono sereno del rubro (§1), así que la marca en pantalla conserva el **mismo matiz índigo (H 240°) pero desaturado y algo más profundo**. Es el **único** acento *funcional* del sistema (el dorado de §3.6 es decorativo, no funcional).
 
 | Token | HSL | Uso |
 |---|---|---|
-| `brand-600` (base) | `hsl(241 70% 33%)` ≈ `#1c1a8a` | Acciones primarias, enlaces, foco, elementos de marca |
-| `brand-700` | `hsl(241 72% 26%)` | Hover/active de botones primarios |
-| `brand-50` | `hsl(241 60% 97%)` | Fondos sutiles (banners, selección, hover de filas) |
-| `brand-100` | `hsl(241 55% 92%)` | Bordes/fondos de badges "info" de marca, **fondo del chrome de navegación del admin** (sidebar, topbar — ver §10.2) |
-| `brand-200` | `hsl(241 58% 85%)` | Hover/borde sobre el chrome de navegación (un paso más oscuro que `brand-100`) |
+| `brand-600` (base) | `hsl(240 55% 33%)` | Acciones primarias, enlaces, foco, íconos, elementos de marca |
+| `brand-700` | `hsl(240 60% 26%)` | Hover/active de botones primarios, hero, footer y títulos del sitio público |
+| `brand-50` | `hsl(240 50% 97%)` | Fondos sutiles (banners, selección, hover de filas, secciones del sitio público) |
+| `brand-100` | `hsl(240 44% 92%)` | Bordes/fondos de badges "info" de marca, **fondo del chrome de navegación del admin** (sidebar, topbar — ver §10.2) |
+| `brand-200` | `hsl(240 46% 85%)` | Hover/borde sobre el chrome de navegación (un paso más oscuro que `brand-100`) |
+
+> El azul crudo del logo (`#0004B1`) se conserva solo dentro del PNG del logotipo; **nunca** se usa como color de UI (recolorear el logo está prohibido, §2.1, pero la interfaz sí usa la versión desaturada de arriba). Si se obtiene una guía de marca formal con un hex distinto, reemplazar aquí y en `references/tokens.md` — es el único lugar a actualizar.
 
 > Si en algún momento se obtiene el hex exacto de marca (guía de marca formal, Pantone), reemplazar aquí y en `references/tokens.md` — es el único lugar que debe actualizarse.
 
 ### 3.2 Escala neutra (texto, fondos, bordes)
-Gris frío (mismo matiz ~241° con saturación mínima) para que combine con el azul sin generar dos temperaturas de color distintas.
+Gris frío (mismo matiz ~240° con saturación mínima) para que combine con el índigo sin generar dos temperaturas de color distintas. `neutral-950` ≈ `#16181C` (negro suave del texto principal).
 
 | Token | Uso |
 |---|---|
@@ -110,7 +112,23 @@ Regla concreta, no ambigua, para todos los badges de estado que aparecen en el s
 | Notificación puramente informativa (p. ej. "sede sin acceso total") | `info` |
 
 ### 3.5 Contraste (ver también §9)
-Todo par texto/fondo debe cumplir **WCAG AA** (4.5:1 texto normal, 3:1 texto grande/ícono). `brand-600` sobre blanco y blanco sobre `brand-600` cumplen AA — verificar siempre que se introduzca una combinación nueva.
+Todo par texto/fondo debe cumplir **WCAG AA** (4.5:1 texto normal, 3:1 texto grande/ícono). `brand-600` sobre blanco y blanco sobre `brand-600` cumplen AA — verificar siempre que se introduzca una combinación nueva. El dorado (§3.6) **no** cumple AA como texto sobre fondo claro: nunca se usa como color de texto salvo `gold-900` sobre un fondo `gold-500`.
+
+### 3.6 Dorado (acento decorativo, no funcional)
+Toque de distinción visual de la marca (`gold-500` ≈ `#C6A15B`). Convive con el principio §1.5 **solo** porque no compite con el azul: el azul comunica interacción, el dorado no comunica nada, solo adorna. Regla mental: si quitas el dorado, la interfaz debe seguir siendo 100 % usable y sin ambigüedad — si algo *depende* del dorado para entenderse, está mal usado.
+
+**Dónde sí (mínimo y espaciado):**
+- Líneas/filetes finos de acento: subrayado bajo un titular del hero, borde superior de una tarjeta de servicio, separador antes del footer.
+- Detalle del logotipo/marca sobre fondo índigo de marca (marco, filete).
+- Un **único** CTA destacado del **sitio público** por vista (p. ej. "Llamar ahora" del footer), con texto `gold-900` o `brand-700` sobre el dorado — nunca blanco.
+
+**Dónde no (regla dura):**
+- Nunca en el admin operativo: tablas, formularios, dashboard, chrome de navegación, badges de estado. La única presencia admisible del dorado en el admin es un filete en pantallas de marca sin densidad (login) o en membretes de PDF/documentos exportados.
+- Nunca para comunicar estado, interacción, enlaces, foco o jerarquía de acción — ese rol es exclusivo del azul (§1.5, §12).
+- Nunca como color de texto sobre fondo claro (no cumple AA, §3.5).
+- Nunca más de un elemento dorado "protagonista" por vista; el resto son filetes finos. Si una pantalla ya tiene un CTA dorado, no se añade otro bloque dorado.
+
+**Superficies:** dorado como fill (`gold-500`) lleva texto `gold-900` o `brand-700` encima. Como filete/borde (`border-gold-500`) se aplica a un solo lado y, por consistencia con §15, sin `rounded` en ese lado.
 
 ## 4. Tipografía
 
@@ -207,6 +225,22 @@ Estructura exacta según `docs/15_frontend.md` §15.2:
 ### 10.3 Reglas comunes
 - Nunca más de 2 niveles de anidamiento en cualquier menú (ni sidebar ni dropdown).
 - Todo enlace/ítem de navegación tiene un estado `hover` y un estado `active`/`current` visualmente distintos.
+
+### 10.4 Impresión y exportación A4/PDF (admin)
+
+Enfoque 100% cliente, sin backend ni dependencias nuevas: cada documento imprimible (cotización, venta, inventario — y todo módulo futuro que lo necesite) usa la impresión nativa del navegador. El usuario obtiene el PDF con "Guardar como PDF" del diálogo de impresión — no hay un endpoint que genere el archivo.
+
+**Mecanismo (`apps/admin/src/components/print/`):**
+- `PrintButton`: dispara `window.print()`; se oculta a sí mismo con `print:hidden` (no debe aparecer en el documento impreso).
+- `PrintDocument` + `PrintSection` + `PrintFields`: la plantilla imprimible — encabezado con logo + tipo de documento + código + fecha + sede, secciones con rótulo, grids de pares label/valor. Vive siempre en el DOM (no se genera bajo demanda) pero permanece `hidden`; solo se hace visible con `print:block` bajo `@media print`. Así nunca hay que sincronizar dos copias de los datos ni condicionar el render por JS.
+- El contenido operativo normal (`Card`s, tablas, botones de acción) se envuelve en un contenedor con `print:hidden` — nunca se reutiliza la vista de pantalla como documento impreso: son plantillas separadas, porque una vista operativa (con botones, badges, bordes de tabla pensados para escanear rápido) no es un documento formal para entregarle a un cliente.
+- El chrome de la app (`Sidebar`, `Topbar`) lleva `print:hidden` a nivel global — nunca hay que repetirlo por página.
+- `apps/admin/src/app/globals.css` define `@page { size: A4; margin: 16mm 14mm; }` una sola vez — ninguna página define su propio tamaño de papel.
+
+**Contenido del documento:**
+- Cada plantilla lleva un aviso al pie (`disclaimer` de `PrintDocument`) aclarando que es un documento interno/informativo, **no** un comprobante de pago tributario (boleta/factura electrónica) — el sistema no emite comprobantes SUNAT; sin este aviso el documento podría confundirse con uno.
+- Tablas dentro de un documento imprimible: `border-collapse` + `px-2 py-1.5` en cada celda (nunca solo `py-*` — sin padding horizontal, una columna alineada a la derecha queda pegada a la siguiente alineada a la izquierda, ilegible).
+- Listados que en pantalla están paginados (p. ej. inventario) imprimen el conjunto completo que calza con el filtro activo, no solo la página visible — se resuelve con una consulta aparte sin paginar, nunca recortando a lo que ya está cargado en la tabla de pantalla.
 
 ## 11. Iconografía
 
@@ -334,13 +368,36 @@ Mínimas y funcionales — refuerzan que algo respondió, nunca decoran porque s
 
 ## 20. Web pública — lineamientos específicos
 
-- **Objetivo:** SEO + conversión a cotización/WhatsApp (`docs/15_frontend.md` §15.1), no un catálogo de e-commerce. El diseño prioriza claridad informativa y un camino corto hacia el contacto.
-- **Hero de inicio:** titular en la serif de acento (§4) + subtítulo en Inter + un único CTA primario (Cotizar) y uno secundario (WhatsApp/Contacto). Sin video de fondo, sin autoplay.
-- **`WhatsAppButton`:** flotante, esquina inferior derecha, ícono + (opcional) texto "Escríbenos" en desktop, mensaje prellenado. Debe respetar el espacio seguro inferior en mobile (no tapar el CTA principal ni un footer sticky si existiera).
+**Objetivo:** SEO + conversión a cotización/WhatsApp (`docs/15_frontend.md` §15.1), no un catálogo de e-commerce. El diseño prioriza claridad informativa y un camino corto hacia el contacto.
+
+**Referencia de estilo:** la estructura de esta sección toma patrones de sitios funerarios modernos y serenos (p. ej. Bethel Funerals) — **solo la estructura y el tratamiento visual**, no su paleta: los colores son siempre el índigo + dorado de Minaya (§3).
+
+### 20.1 Anatomía de la página de inicio
+Orden recomendado de secciones, de arriba a abajo:
+
+1. **Header fijo** (§10.1) — logo, navegación, y botón de contacto/WhatsApp destacado siempre visible.
+2. **Hero** — una sola imagen serena de fondo (naturaleza, velas, luz, arquitectura de sede; nunca imágenes explícitas relacionadas al fallecimiento, §2.3), titular corto y cálido en la serif de acento (§4), subtítulo en Inter, un CTA primario (Cotizar) + uno secundario (WhatsApp). Filete dorado fino bajo el titular (§3.6). **Sin video ni carrusel autoplay** — a diferencia de la referencia, aquí prima la serenidad y el respeto a `prefers-reduced-motion` (§1, §19): la imagen es fija.
+3. **Introducción empática** — 2-3 frases en primera persona sobre el acompañamiento (§2.3), sobre fondo blanco o `brand-50`, con amplio espacio en blanco.
+4. **Servicios** — grid de `ServiceCard` (§15): cremación, entierro, velación, traslados, planes a futuro. Cada tarjeta con borde superior dorado fino (§3.6).
+5. **Proceso "¿Qué hacer cuando alguien fallece?"** — pasos numerados (círculos `brand-700`), guía clara para un momento de urgencia.
+6. **Sedes** — `BranchCard` con foto, dirección, teléfono y mapa (§20.3).
+7. **Recursos de duelo / preguntas frecuentes** — sección educativa y empática (guías, etiqueta funeraria, qué hacer al fallecer un familiar, trámites), con acordeón de FAQ. Responde lo que una familia busca en un momento difícil y construye confianza por utilidad, no por decoración.
+8. **Testimonios** — citas reales de familias, en tono sobrio (§2.3): sin estrellas, sin insignias de "garantía", solo la voz auténtica. Máximo 3-4, en tarjetas simples o una cita destacada.
+9. **CTA de cierre + footer** — franja `brand-700` con filete dorado superior (§3.6), mensaje de disponibilidad 24 h, y footer (§10.1) con enlaces secundarios, sedes y aviso de privacidad (Ley 29733).
+
+### 20.2 Tono visual (patrones de la referencia, filtrados por §1)
+- **Calidez, no frialdad transaccional:** fotografía suave y serena, mucho espacio en blanco, ritmo pausado entre secciones (§6: 48-64px en desktop). La confianza se transmite con calma visual, nunca con densidad ni urgencia comercial.
+- **Camino corto y guiado hacia el contacto:** cada sección larga (servicios, precios, recursos) termina ofreciendo "hablar con nosotros", nunca deja a la familia sin un siguiente paso claro.
+- **Navegación pegajosa y contacto siempre a la vista:** header sticky + `WhatsAppButton` flotante (§8, §11) para que llamar o escribir esté a un toque en todo momento.
+
+### 20.3 Componentes y reglas clave
+- **`WhatsAppButton`:** flotante, esquina inferior derecha, ícono + (opcional) texto "Escríbenos" en desktop, mensaje prellenado. Respeta el espacio seguro inferior en mobile (no tapar el CTA principal ni un footer sticky si existiera).
 - **`QuotationForm`:** el formulario más importante del sitio — sigue todas las reglas de §13, más: casilla de consentimiento de datos personales (Ley 29733) obligatoria y explícita, nunca premarcada; mensaje de éxito claro tras el envío indicando el siguiente paso ("Nos pondremos en contacto en las próximas horas").
-- **SEO:** cada página define `generateMetadata` con título/descripción únicos; JSON-LD `LocalBusiness`/`FuneralService` en las páginas relevantes; imágenes con `alt` real y dimensiones explícitas (evitar CLS); textos con jerarquía semántica correcta (`h1` único por página, `h2` para secciones).
+- **`BranchCard`/página de sede:** dirección, teléfono y mapa visibles — información práctica que alguien busca en un momento urgente, sin obligarlo a navegar varias pantallas.
+
+### 20.4 SEO y contenido sensible
+- **SEO:** cada página define `generateMetadata` con título/descripción únicos; JSON-LD `LocalBusiness`/`FuneralService` en las páginas relevantes; imágenes con `alt` real y dimensiones explícitas (evitar CLS); jerarquía semántica correcta (`h1` único por página, `h2` para secciones).
 - **Contenido sensible:** nunca mostrar precios de forma que se sienta transaccional/fría sin contexto humano cerca (acompañar con un CTA de "hablar con nosotros", no solo un botón "Comprar").
-- **Sedes:** cada `BranchCard`/página de sede muestra dirección, teléfono y mapa — información práctica que alguien busca en un momento urgente, sin obligarlo a navegar varias pantallas.
 
 ## 21. Panel administrativo — lineamientos específicos
 
@@ -356,6 +413,7 @@ Mínimas y funcionales — refuerzan que algo respondió, nunca decoran porque s
 
 - Usar siempre los tokens de `references/tokens.md` — nunca un valor de color/espaciado/tamaño escrito a mano fuera de la escala.
 - Un único botón `primary` por vista.
+- Reservar el dorado (§3.6) para detalle decorativo del sitio público (filetes, borde de tarjeta, un CTA destacado) — nunca en el admin operativo ni con significado funcional.
 - Todo estado de negocio se muestra con el badge y color semántico mapeado en §3.4 — nunca inventar un color nuevo para un estado nuevo sin agregarlo primero a esa tabla.
 - Mobile-first en cada componente nuevo.
 - Loading/empty/error/success explícitos en todo lo que dependa de datos remotos.
@@ -365,7 +423,7 @@ Mínimas y funcionales — refuerzan que algo respondió, nunca decoran porque s
 ## 23. Reglas a evitar (no hacer)
 
 - No usar gradientes, sombras de color, glassmorphism ni efectos "de moda" ajenos al tono sobrio de la marca.
-- No usar más de un color de acento (`brand-600`) en una misma vista para elementos no relacionados.
+- No usar más de un acento **funcional**: solo `brand-600` comunica interacción/atención en una misma vista. El dorado (§3.6) es decorativo, de uso mínimo y reservado; nunca se emplea como color funcional (enlaces, foco, estado, botones de acción) ni en las superficies operativas del admin.
 - No usar rojo/verde saturados a pantalla completa (fondos de banner de error/éxito) — reservar el semántico saturado para acentos pequeños (íconos, bordes, badges), con fondos siempre en el tono `-50`/`-100`.
 - No usar `alert()`/`confirm()` nativos.
 - No usar tipografía script/cursiva fuera del logotipo.

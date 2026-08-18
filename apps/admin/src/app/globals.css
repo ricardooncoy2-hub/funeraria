@@ -6,31 +6,41 @@
  * (SKILL.md §21).
  */
 :root {
-  /* Marca — azul del logotipo ("Azul Minaya") */
-  --color-brand-50: hsl(241 60% 97%);
-  --color-brand-100: hsl(241 55% 92%);
-  --color-brand-200: hsl(241 58% 85%);
-  --color-brand-300: hsl(241 60% 74%);
-  --color-brand-400: hsl(241 62% 58%);
-  --color-brand-500: hsl(241 65% 44%);
-  --color-brand-600: hsl(241 70% 33%);
-  --color-brand-700: hsl(241 72% 26%);
-  --color-brand-800: hsl(241 74% 20%);
-  --color-brand-900: hsl(241 76% 15%);
-  --color-brand-950: hsl(241 78% 9%);
+  /* Marca — índigo del logotipo, desaturado para sobriedad ("Azul Minaya"). Ver SKILL.md §3.1. */
+  --color-brand-50: hsl(240 50% 97%);
+  --color-brand-100: hsl(240 44% 92%);
+  --color-brand-200: hsl(240 46% 85%);
+  --color-brand-300: hsl(240 50% 74%);
+  --color-brand-400: hsl(240 52% 57%);
+  --color-brand-500: hsl(240 55% 44%);
+  --color-brand-600: hsl(240 55% 33%);
+  --color-brand-700: hsl(240 60% 26%);
+  --color-brand-800: hsl(240 64% 20%);
+  --color-brand-900: hsl(240 68% 14%);
+  --color-brand-950: hsl(240 72% 9%);
 
   /* Neutral — gris frío, mismo matiz que la marca */
-  --color-neutral-50: hsl(241 20% 98%);
-  --color-neutral-100: hsl(241 15% 95%);
-  --color-neutral-200: hsl(241 12% 90%);
-  --color-neutral-300: hsl(241 10% 82%);
-  --color-neutral-400: hsl(241 8% 64%);
-  --color-neutral-500: hsl(241 7% 48%);
-  --color-neutral-600: hsl(241 9% 36%);
-  --color-neutral-700: hsl(241 12% 26%);
-  --color-neutral-800: hsl(241 15% 17%);
-  --color-neutral-900: hsl(241 18% 11%);
-  --color-neutral-950: hsl(241 20% 7%);
+  --color-neutral-50: hsl(240 20% 98%);
+  --color-neutral-100: hsl(240 15% 95%);
+  --color-neutral-200: hsl(240 12% 90%);
+  --color-neutral-300: hsl(240 10% 82%);
+  --color-neutral-400: hsl(240 8% 64%);
+  --color-neutral-500: hsl(240 7% 48%);
+  --color-neutral-600: hsl(240 9% 36%);
+  --color-neutral-700: hsl(240 12% 26%);
+  --color-neutral-800: hsl(240 15% 17%);
+  --color-neutral-900: hsl(240 18% 11%);
+  --color-neutral-950: hsl(240 20% 8%);
+
+  /* Dorado — acento DECORATIVO, no funcional (SKILL.md §3.6). Prohibido en
+     superficies operativas del admin; único uso admisible acá es un filete
+     en pantallas de marca sin densidad (login) o en PDFs exportados. */
+  --color-gold-50: hsl(39 55% 95%);
+  --color-gold-100: hsl(39 52% 86%);
+  --color-gold-300: hsl(39 50% 70%);
+  --color-gold-500: hsl(39 48% 57%);
+  --color-gold-700: hsl(36 55% 34%);
+  --color-gold-900: hsl(34 62% 14%);
 
   /* Semánticos — solo para estado, ver SKILL.md §3.3/3.4 */
   --color-success-50: hsl(142 55% 96%);
@@ -83,6 +93,13 @@
   --color-neutral-900: var(--color-neutral-900);
   --color-neutral-950: var(--color-neutral-950);
 
+  --color-gold-50: var(--color-gold-50);
+  --color-gold-100: var(--color-gold-100);
+  --color-gold-300: var(--color-gold-300);
+  --color-gold-500: var(--color-gold-500);
+  --color-gold-700: var(--color-gold-700);
+  --color-gold-900: var(--color-gold-900);
+
   --color-success-50: var(--color-success-50);
   --color-success-100: var(--color-success-100);
   --color-success-600: var(--color-success-600);
@@ -132,5 +149,22 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Impresión A4 (cotizaciones, ventas, inventario — SKILL.md §10.4). Enfoque
+ * 100% cliente: cada documento imprimible se marca con la variante `print:`
+ * de Tailwind (nunca CSS a mano por página); esta hoja solo define el
+ * tamaño de página y el reseteo de fondo, que no tienen utilidad Tailwind.
+ */
+@page {
+  size: A4;
+  margin: 16mm 14mm;
+}
+
+@media print {
+  body {
+    background: white;
   }
 }

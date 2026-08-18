@@ -95,7 +95,7 @@ function UserMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span className="flex size-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+        <span className="flex size-8 items-center justify-center rounded-full bg-white text-xs font-semibold text-brand-700">
           {initials(user.nombres, user.apellidos)}
         </span>
         <span className="hidden text-sm text-neutral-950 sm:inline">{user.nombres}</span>
@@ -128,7 +128,7 @@ export function Topbar() {
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-brand-200 bg-brand-100 px-4">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-brand-200 bg-brand-100 px-4 print:hidden">
       <button
         type="button"
         onClick={() => setMobileNavOpen(true)}

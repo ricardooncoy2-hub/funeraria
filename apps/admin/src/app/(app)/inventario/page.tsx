@@ -8,10 +8,12 @@ import { createTableColumns, DataTable } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdjustmentModal } from "@/components/inventario/adjustment-modal";
+import { InventoryPrint } from "@/components/inventario/inventory-print";
 import { KardexModal } from "@/components/inventario/kardex-modal";
+import { PrintButton } from "@/components/print/print-button";
 import { useAuthorizedBranches } from "@/lib/api/use-branches";
 import { ApiError } from "@/lib/api/client";
-import { type InventoryRow, fetchLowStock, fetchStock } from "@/lib/api/inventory";
+import { type InventoryRow, fetchAllStock, fetchLowStock, fetchStock } from "@/lib/api/inventory";
 import { hasPermission, useAuthStore } from "@/lib/auth/auth-store";
 
 const columnHelper = createTableColumns<InventoryRow>();
@@ -38,6 +40,14 @@ export default function InventarioPage() {
     queryKey: ["inventarios", "stock-bajo", sedeId],
     queryFn: () => fetchLowStock(sedeId || undefined),
     enabled: view === "bajo",
+  });
+
+  // Listado completo (sin paginar) para la vista de impresión (SKILL.md
+  // §10.4) — la tabla en pantalla solo tiene la página de 20 visible.
+  const printStockQuery = useQuery({
+    queryKey: ["inventarios", "print", sedeId],
+    queryFn: () => fetchAllStock({ sedeId: sedeId || undefined }),
+    enabled: view === "todo",
   });
 
   function refetch() {
@@ -89,20 +99,26 @@ export default function InventarioPage() {
     (view === "todo" ? stockQuery.error : lowStockQuery.error) instanceof ApiError
       ? ((view === "todo" ? stockQuery.error : lowStockQuery.error) as ApiError).message
       : undefined;
+  const printRows = view === "todo" ? (printStockQuery.data ?? []) : (lowStockQuery.data ?? []);
+  const sedeNombre = sedeId ? branches.find((b) => b.id === sedeId)?.nombre : undefined;
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 print:hidden">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold text-neutral-950">Inventario</h1>
           <p className="mt-1 text-sm text-neutral-700">Stock por sede, kardex y ajustes (RF-040/043/045).</p>
         </div>
-        {canAdjust && (
-          <Button onClick={() => setAdjustmentOpen(true)}>
-            <ClipboardEdit className="size-4" aria-hidden />
-            Nuevo ajuste
-          </Button>
-        )}
+        <div className="flex gap-3">
+          <PrintButton />
+          {canAdjust && (
+            <Button onClick={() => setAdjustmentOpen(true)}>
+              <ClipboardEdit className="size-4" aria-hidden />
+              Nuevo ajuste
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -156,6 +172,9 @@ export default function InventarioPage() {
       />
 
       {view === "todo" && stockQuery.data && <Pagination meta={stockQuery.data.meta} onPageChange={setPage} />}
+      </div>
+
+      <InventoryPrint rows={printRows} sedeNombre={sedeNombre} vista={view} />
 
       {adjustmentOpen && (
         <AdjustmentModal open={adjustmentOpen} onOpenChange={setAdjustmentOpen} onSuccess={refetch} />

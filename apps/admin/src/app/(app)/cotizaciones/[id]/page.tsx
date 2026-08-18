@@ -10,7 +10,9 @@ import { Card } from "@/components/ui/card";
 import { PageSpinner } from "@/components/ui/spinner";
 import { AssignQuotationModal } from "@/components/cotizaciones/assign-quotation-modal";
 import { QuotationEditModal } from "@/components/cotizaciones/quotation-edit-modal";
+import { QuotationPrint } from "@/components/cotizaciones/quotation-print";
 import { QuotationStateControl } from "@/components/cotizaciones/quotation-state-control";
+import { PrintButton } from "@/components/print/print-button";
 import { ApiError } from "@/lib/api/client";
 import { convertirQuotationVenta, fetchQuotation } from "@/lib/api/quotations";
 import { hasPermission, useAuthStore } from "@/lib/auth/auth-store";
@@ -64,6 +66,7 @@ export default function QuotationDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 print:hidden">
       <div className="flex items-center justify-between">
         <div>
           <button
@@ -84,6 +87,7 @@ export default function QuotationDetailPage() {
           </div>
         </div>
         <div className="flex gap-3">
+          <PrintButton />
           {canGestionar && (
             <Button variant="secondary" onClick={() => setEditOpen(true)}>
               Editar
@@ -197,6 +201,9 @@ export default function QuotationDetailPage() {
           <p className="text-sm text-neutral-700">{quotation.observaciones}</p>
         </Card>
       )}
+      </div>
+
+      <QuotationPrint quotation={quotation} />
 
       {editOpen && (
         <QuotationEditModal open={editOpen} onOpenChange={setEditOpen} quotation={quotation} onSuccess={refetch} />

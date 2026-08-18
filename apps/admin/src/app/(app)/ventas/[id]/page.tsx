@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { PageSpinner } from "@/components/ui/spinner";
 import { FinancingStateControl } from "@/components/ventas/financing-state-control";
 import { RegisterPaymentModal } from "@/components/ventas/register-payment-modal";
+import { SalePrint } from "@/components/ventas/sale-print";
+import { PrintButton } from "@/components/print/print-button";
 import { ApiError } from "@/lib/api/client";
 import { anularPayment } from "@/lib/api/payments";
 import { anularSale, fetchEstadoCuenta, fetchSale, type Financing } from "@/lib/api/sales";
@@ -86,6 +88,7 @@ export default function VentaDetallePage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 print:hidden">
       <div className="flex items-center justify-between">
         <div>
           <button
@@ -101,11 +104,14 @@ export default function VentaDetallePage() {
             <EstadoBadge estado={sale.estado} />
           </div>
         </div>
-        {puedeAnular && (
-          <Button variant="destructive" onClick={() => setAnulandoVenta(true)}>
-            Anular venta
-          </Button>
-        )}
+        <div className="flex gap-3">
+          <PrintButton />
+          {puedeAnular && (
+            <Button variant="destructive" onClick={() => setAnulandoVenta(true)}>
+              Anular venta
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -278,6 +284,9 @@ export default function VentaDetallePage() {
           </div>
         )}
       </Card>
+      </div>
+
+      <SalePrint sale={sale} cuenta={cuenta} />
 
       {payingFinancing && (
         <RegisterPaymentModal

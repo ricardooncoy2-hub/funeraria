@@ -55,8 +55,8 @@ SEO, mobile-first, performance y accesibilidad (ver [32](32_seo.md) y RNF-003/06
 |---|---|---|
 | *(suelto, sin grupo)* | Dashboard | KPIs por sede: ventas del día, stock bajo, CxC, caja abierta |
 | Ventas | Clientes | CRUD, historial |
-| Ventas | Cotizaciones | Bandeja, asignación, conversión a venta |
-| Ventas | Ventas | Nueva venta (wizard), listado, estado de cuenta, anulación |
+| Ventas | Cotizaciones | Bandeja, asignación, conversión a venta, impresión A4/PDF (detalle) |
+| Ventas | Ventas | Nueva venta (wizard), listado, estado de cuenta, anulación, impresión A4/PDF (detalle) |
 | Ventas | Servicios | Servicios, disponibilidad y precio por sede |
 | Ventas | Planes | Planes y componentes |
 | Finanzas | Financiamiento | Financiadores, coberturas, estados |
@@ -65,7 +65,7 @@ SEO, mobile-first, performance y accesibilidad (ver [32](32_seo.md) y RNF-003/06
 | Finanzas | Caja | Apertura, movimientos, cierre/arqueo |
 | Compras e inventario | Proveedores | CRUD |
 | Compras e inventario | Compras | Registro, recepción, detalle |
-| Compras e inventario | Inventario | Stock por sede, kardex, ajustes, stock bajo |
+| Compras e inventario | Inventario | Stock por sede, kardex, ajustes, stock bajo, impresión A4/PDF del listado completo |
 | Compras e inventario | Transferencias | Solicitud, aprobación, envío, recepción |
 | Compras e inventario | Productos | Catálogo, categorías |
 | Administración | Sedes | Lista, alta/edición, marcar principal |
@@ -74,6 +74,9 @@ SEO, mobile-first, performance y accesibilidad (ver [32](32_seo.md) y RNF-003/06
 | *(suelto, sin grupo)* | Reportes | Por sede y consolidados, exportación |
 
 > **Nota sobre la agrupación:** Productos convive con Inventario (no con Servicios/Planes) porque es el único de los tres con seguimiento real de stock (kardex, ajustes, transferencias); Servicios y Planes no se stockean, por eso quedan con el resto del flujo de venta. Dashboard y Reportes quedan sueltos porque su audiencia de permisos (todos los roles autenticados / `reportes.sede`, respectivamente) no coincide con la de ningún otro grupo — forzarlos a compartir encabezado con otro ítem generaría un rótulo que no describe lo que ese rol realmente ve ahí.
+
+### Impresión y exportación A4/PDF
+Cotizaciones, ventas e inventario se pueden imprimir/exportar a PDF en formato A4. Enfoque 100% cliente (SKILL.md §10.4): un botón "Imprimir" dispara la impresión nativa del navegador (`window.print()`) sobre una plantilla imprimible dedicada (encabezado, tablas, aviso de "documento informativo, no comprobante tributario"), oculta en pantalla y visible solo bajo `@media print`; el usuario obtiene el PDF con "Guardar como PDF" del propio diálogo de impresión. No hay endpoint de generación de PDF ni dependencia nueva — es distinto de la exportación de Reportes (§24.4), que sí es server-side y asíncrona para volúmenes grandes.
 
 ### Flujo destacado: wizard de venta
 1. Sede de venta (según acceso) + cliente.

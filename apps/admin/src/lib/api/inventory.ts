@@ -51,6 +51,24 @@ export async function fetchStock(params: {
   return apiFetch<PaginatedResult<InventoryRow>>(`/inventarios?${search.toString()}`);
 }
 
+/**
+ * Trae todo el stock que calce con el filtro, sin paginar — para la vista de
+ * impresión (SKILL.md §10.4), que necesita el listado completo y no solo la
+ * página de 20 visible en pantalla. `pageSize` tiene un tope de 100 en el
+ * backend (`PaginationQueryDto`), así que se recorre página por página.
+ */
+export async function fetchAllStock(params: { sedeId?: string }): Promise<InventoryRow[]> {
+  const rows: InventoryRow[] = [];
+  let page = 1;
+  while (true) {
+    const result = await fetchStock({ sedeId: params.sedeId, page, pageSize: 100 });
+    rows.push(...result.data);
+    if (page >= result.meta.totalPages) break;
+    page += 1;
+  }
+  return rows;
+}
+
 export async function fetchLowStock(sedeId?: string) {
   const search = new URLSearchParams();
   if (sedeId) search.set("sedeId", sedeId);

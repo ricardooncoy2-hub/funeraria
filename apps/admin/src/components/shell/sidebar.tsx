@@ -180,7 +180,7 @@ export function Sidebar() {
       {/* Desktop: fija, colapsable a íconos (SKILL.md §7) */}
       <aside
         className={cn(
-          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-brand-200 bg-brand-100 transition-[width] duration-150 lg:flex",
+          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-brand-200 bg-brand-100 transition-[width] duration-150 lg:flex print:hidden",
           collapsed ? "w-16" : "w-60",
         )}
       >
@@ -195,7 +195,7 @@ export function Sidebar() {
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="flex items-center justify-center gap-2 border-t border-neutral-200 p-3 text-sm text-neutral-500 hover:bg-neutral-300"
+          className="flex items-center justify-center gap-2 border-t border-brand-200 p-3 text-sm text-neutral-500 hover:bg-brand-200"
           aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
         >
           {collapsed ? <ChevronsRight className="size-4" aria-hidden /> : <ChevronsLeft className="size-4" aria-hidden />}
@@ -204,20 +204,20 @@ export function Sidebar() {
 
       {/* Mobile: overlay a pantalla completa (SKILL.md §8) */}
       {mobileNavOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className="fixed inset-0 z-40 print:hidden lg:hidden">
           <div
             className="absolute inset-0 bg-neutral-950/50"
             onClick={() => setMobileNavOpen(false)}
             aria-hidden
           />
-          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-neutral-200 shadow-md">
-            <div className="flex h-14 items-center justify-between border-b border-neutral-200 px-4">
+          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-brand-100 shadow-md">
+            <div className="flex h-14 items-center justify-between border-b border-brand-200 px-4">
               <Image src="/logo-minaya.png" alt="Funeraria Minaya" width={140} height={37} />
               <button
                 type="button"
                 onClick={() => setMobileNavOpen(false)}
                 aria-label="Cerrar menú"
-                className="rounded-md p-1 text-neutral-500 hover:bg-neutral-300"
+                className="rounded-md p-1 text-neutral-500 hover:bg-brand-200"
               >
                 <X className="size-5" aria-hidden />
               </button>
