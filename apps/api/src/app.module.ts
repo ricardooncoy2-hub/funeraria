@@ -20,6 +20,7 @@ import { InventoryTransfersModule } from './modules/inventory-transfers/inventor
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { ProductsModule } from './modules/products/products.module';
+import { PublicModule } from './modules/public/public.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { QuotationsModule } from './modules/quotations/quotations.module';
 import { RolesModule } from './modules/roles/roles.module';
@@ -71,6 +72,7 @@ import { PrismaModule } from './prisma/prisma.module';
     FinancingModule,
     CashModule,
     HealthModule,
+    PublicModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },

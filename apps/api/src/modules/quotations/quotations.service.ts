@@ -16,11 +16,32 @@ import { SedeScopeService } from '../authz/sede-scope.service';
 import { CreateSaleDto } from '../sales/dto/create-sale.dto';
 import { SalesService } from '../sales/sales.service';
 import { AssignQuotationDto } from './dto/assign-quotation.dto';
-import { CreateQuotationDto } from './dto/create-quotation.dto';
+import { QuotationItemDto } from './dto/quotation-item.dto';
 import { QUOTATION_STATES, SetQuotationStatusDto } from './dto/set-quotation-status.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 
 type QuotationState = (typeof QUOTATION_STATES)[number];
+
+/**
+ * Forma mínima que necesita `create()` — `CreateQuotationDto` (origen interno,
+ * admite `clienteId`/`validoHasta`) y `PublicCreateQuotationDto` (origen fijo
+ * `'WEB'` del servidor, sin esos dos campos) satisfacen esta interfaz por
+ * estructura, así que ambos caminos reutilizan la misma lógica de creación
+ * (generación de código transaccional incluida) sin duplicarla.
+ */
+export interface QuotationCreateInput {
+  origen: string;
+  solicitanteNombres: string;
+  solicitanteTelefono: string;
+  solicitanteCorreo?: string;
+  clienteId?: string;
+  sedePreferidaId?: string;
+  planId?: string;
+  observaciones?: string;
+  validoHasta?: string;
+  consentimientoDatos: boolean;
+  items?: QuotationItemDto[];
+}
 
 /** docs/23 §23.3 */
 const ALLOWED_TRANSITIONS: Record<QuotationState, QuotationState[]> = {
@@ -95,7 +116,7 @@ export class QuotationsService {
     return quotation;
   }
 
-  async create(dto: CreateQuotationDto) {
+  async create(dto: QuotationCreateInput) {
     if (dto.clienteId) {
       const cliente = await this.prisma.customer.findFirst({
         where: { id: BigInt(dto.clienteId), deletedAt: null },
