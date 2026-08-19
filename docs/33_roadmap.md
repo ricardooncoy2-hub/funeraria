@@ -56,11 +56,18 @@ Fases ordenadas por dependencias. Cada fase entrega valor y deja base para la si
 - **Pendiente en el panel:** Reportes y Auditoría (Fase 8) — sin backend propio todavía, no se construyen antes de tiempo.
 
 ## Fase 7 — Web pública
-- Sitio Next.js público: servicios, productos, planes, promociones, sedes, contacto, FAQ.
-- Formulario de cotización (origen WEB) + WhatsApp + consentimiento.
-- SEO y performance.
+- Sitio Next.js público (`apps/web`, `docs/15_frontend.md` §15.1 + skill `funeraria-design` §20).
+- **Sub-fases (trazabilidad):**
+  - **7.A — Backend público**: módulo `apps/api/src/modules/public/` de solo lectura (`@Public()`, sin paginar — catálogo chico), servicios/productos/planes/sedes; endpoint `POST /public/cotizaciones` (origen `WEB` forzado en servidor, consentimiento obligatorio, rate limit 5/min).
+  - **7.B — Fundaciones frontend**: tokens de diseño (paleta + dorado + serif de acento), cliente API sin auth, layout (header/footer/WhatsAppButton), home con las 9 secciones de SKILL.md §20.1.
+  - **7.C — Catálogo**: `/servicios` + detalle, `/productos` (agrupado por categoría, sin detalle propio), `/planes` + detalle.
+  - **7.D — Sedes**: `/sedes`, toda la información inline (sin ruta de detalle por sede).
+  - **7.E — Cotización pública**: `QuotationForm` compartido por `/cotizacion` y `/contacto`, conectado a 7.A.
+  - **7.F — SEO + páginas restantes**: `/nosotros`, `/preguntas-frecuentes`, `/politica-privacidad`; `generateMetadata`/canonical en todas las páginas; JSON-LD `LocalBusiness` (por sede con NAP completo), `FAQPage`, `BreadcrumbList`; `sitemap.xml`/`robots.txt`.
+- **Decisiones registradas durante la fase:** identificador de URL = `codigo` interno, no slug nuevo (`docs/32_seo.md` §32.5); `/promociones` diferido — no existe modelo/CRUD de Promoción en el backend, es una capacidad de negocio nueva por derecho propio, no parte de construir el sitio con lo ya existente.
 - **Salida:** captación pública y cotizaciones web integradas al admin.
-- **Verifica:** CA-QUO-01, CA-SEO-01..03.
+- **Verifica:** CA-QUO-01..03, CA-SEO-01..03, CA-DP-01.
+- **Pendiente:** `/promociones` (requiere modelo + CRUD admin + endpoint público, fuera de esta fase).
 
 ## Fase 8 — Reportes, auditoría y optimización
 - `reports` por sede y consolidados; exportaciones.

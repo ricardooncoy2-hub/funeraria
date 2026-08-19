@@ -20,14 +20,27 @@ const lora = Lora({
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
+const DESCRIPCION =
+  "Servicios funerarios, planes a futuro y acompañamiento cercano para su familia. Cotice en línea o escríbanos por WhatsApp.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: "Funeraria Minaya — Servicios funerarios con calidez y respeto",
     template: "%s — Funeraria Minaya",
   },
-  description:
-    "Servicios funerarios, planes a futuro y acompañamiento cercano para su familia. Cotice en línea o escríbanos por WhatsApp.",
+  description: DESCRIPCION,
+  // CA-SEO-02: el sitio público sí es indexable (a diferencia del admin, que
+  // declara robots:{index:false} en su propio layout) — explícito para que
+  // no dependa del default de Next.
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    locale: "es_PE",
+    siteName: "Funeraria Minaya",
+    title: "Funeraria Minaya — Servicios funerarios con calidez y respeto",
+    description: DESCRIPCION,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

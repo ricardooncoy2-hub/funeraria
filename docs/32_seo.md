@@ -30,6 +30,20 @@ Posicionar a Funeraria Minaya en búsquedas locales (Áncash y provincias donde 
 - URLs limpias y descriptivas: `/servicios/velatorio`, `/planes/plan-basico`, `/sedes/caraz`.
 - Slugs estables; evitar parámetros innecesarios.
 
+> **Decisión Fase 7:** no se implementó un slug legible como columna nueva del
+> modelo de datos. `Producto`/`Servicio`/`Plan`/`Sede` solo tenían un `codigo`
+> interno (`SRV-001`, `PLN-001`) sin formato de slug. El sitio es
+> estrictamente informativo y de contacto directo (cotización/WhatsApp), no
+> un e-commerce — no justificaba una migración de schema solo para SEO. Se
+> usa el `codigo` interno directo en la URL (`/servicios/SRV-001`,
+> `/planes/PLN-001`), estable por construcción (no depende de que alguien no
+> edite un nombre). `Producto` no tiene página de detalle propia (se consulta
+> agrupado por categoría en `/productos` o dentro de los planes que lo
+> incluyen); `Sede` tampoco (toda la información va inline en `/sedes`, sin
+> obligar a navegar a otra pantalla — SKILL.md §20.3). Implementación en
+> `apps/web/src/app/servicios/[codigo]/page.tsx` y
+> `apps/web/src/app/planes/[codigo]/page.tsx`.
+
 ## 32.6 Sitemap y robots
 
 - `sitemap.xml` generado (incluye páginas de servicios, planes, sedes, FAQ).

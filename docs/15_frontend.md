@@ -17,20 +17,22 @@ SEO, mobile-first, performance y accesibilidad (ver [32](32_seo.md) y RNF-003/06
 | `/` | Inicio: propuesta, servicios destacados, planes, CTA cotización/WhatsApp |
 | `/nosotros` | Historia, valores, cobertura |
 | `/servicios` | Lista de servicios (desde `/public/servicios`) |
-| `/servicios/[slug]` | Detalle de servicio |
-| `/productos` | Catálogo público (ataúdes, urnas, etc.) |
+| `/servicios/[codigo]` | Detalle de servicio (identificador = `codigo` interno, no un slug nuevo — ver `docs/32_seo.md` §32.5) |
+| `/productos` | Catálogo público (ataúdes, urnas, etc.), agrupado por categoría — sin página de detalle propia |
 | `/planes` | Planes/paquetes |
-| `/promociones` | Promociones vigentes |
-| `/sedes` | Sedes con dirección, teléfono, mapa |
-| `/contacto` | Formulario + WhatsApp + datos |
+| `/planes/[codigo]` | Detalle de plan, con los ítems incluidos |
+| `/promociones` | **Diferido** (Fase 7): no existe modelo/CRUD de Promoción en el backend — ver `docs/33_roadmap.md` Fase 7 |
+| `/sedes` | Sedes con dirección, teléfono, mapa — todo inline, sin ruta de detalle por sede |
+| `/contacto` | Formulario + WhatsApp + teléfonos por sede |
 | `/preguntas-frecuentes` | FAQ |
-| `/cotizacion` | Formulario de solicitud de cotización |
+| `/cotizacion` | Formulario de solicitud de cotización (admite `?plan=<id>` para preseleccionar un plan) |
+| `/politica-privacidad` | Política de privacidad (Ley N.° 29733) |
 
 ### Componentes clave
 - `WhatsAppButton` (flotante) con mensaje prellenado y número configurable.
-- `QuotationForm` con validación (Zod), consentimiento de datos (Ley 29733), captcha, envío a `/public/cotizaciones`.
+- `QuotationForm` (compartido por `/cotizacion` y `/contacto`) con validación (Zod + React Hook Form), consentimiento de datos (Ley 29733, checkbox nunca premarcado), envío a `/public/cotizaciones`. **Sin captcha**: el anti-spam es el rate limit del propio endpoint (5/min, igual que login) — no se introdujo una dependencia de captcha de terceros sin estar especificada.
 - `ServiceCard`, `PlanCard`, `ProductCard`, `BranchCard`.
-- SEO: `generateMetadata`, JSON-LD (`LocalBusiness`, `FuneralService`), sitemap y robots.
+- SEO: `generateMetadata` + `alternates.canonical` en toda página; JSON-LD `LocalBusiness` (por sede, solo con NAP completo), `Service` (por servicio), `FAQPage`, `BreadcrumbList`; `sitemap.xml`/`robots.txt` (`app/sitemap.ts`/`app/robots.ts`).
 
 ### Estado y datos
 - Sin autenticación. Datos vía `fetch` server-side con cache/revalidate. No expone endpoints internos.
