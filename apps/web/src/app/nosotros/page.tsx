@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { PageHeader } from "@/components/ui/page-header";
@@ -38,6 +39,19 @@ export default function NosotrosPage() {
             de más familias, sin perder el trato personal que nos caracteriza desde el primer día.
           </p>
         </section>
+
+        <figure>
+          <Image
+            src="/fotos/nosotros-equipo-flota.jpg"
+            alt="Equipo y unidades de traslado de Funeraria Minaya"
+            width={960}
+            height={640}
+            className="w-full rounded-lg object-cover"
+          />
+          <figcaption className="mt-2 text-xs text-neutral-500">
+            Parte de nuestro equipo y flota de traslado.
+          </figcaption>
+        </figure>
 
         <section>
           <h2 className="mb-4 text-xl font-semibold text-neutral-950">Nuestros valores</h2>
