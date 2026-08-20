@@ -157,6 +157,7 @@ Restricciones: `UNIQUE(codigo)`, `UNIQUE(is_main_flag)`. Validación transaccion
 | descripcion | TEXT NULL | |
 | precio_base | DECIMAL(12,2) | corporativo |
 | afecto_igv | TINYINT(1) | |
+| imagen_url | VARCHAR(500) NULL | S3 |
 | is_active | TINYINT(1) | |
 | timestamps + deleted_at | | |
 

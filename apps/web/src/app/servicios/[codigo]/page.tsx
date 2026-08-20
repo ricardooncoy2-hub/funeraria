@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -61,6 +62,7 @@ export default async function ServicioDetallePage({ params }: { params: Promise<
     provider: { "@type": "LocalBusiness", name: "Funeraria Minaya" },
     areaServed: "PE",
     url: `${SITE_URL}/servicios/${codigo}`,
+    image: servicio.imagenUrl ? `${SITE_URL}${servicio.imagenUrl}` : undefined,
   };
 
   return (
@@ -69,6 +71,18 @@ export default async function ServicioDetallePage({ params }: { params: Promise<
       <JsonLd data={serviceJsonLd} />
       <PageHeader title={servicio.nombre} />
       <Container className="max-w-2xl py-16">
+        {servicio.imagenUrl && (
+          <div className="relative mb-8 h-64 w-full overflow-hidden rounded-lg bg-neutral-100 sm:h-80">
+            <Image
+              src={servicio.imagenUrl}
+              alt={servicio.nombre}
+              fill
+              sizes="(min-width: 640px) 672px, 100vw"
+              className="object-cover"
+              priority
+            />
+          </div>
+        )}
         {servicio.descripcion && <p className="text-neutral-700">{servicio.descripcion}</p>}
         <p className="mt-6 text-xl font-semibold text-brand-700">
           Desde {formatMoney(servicio.precioBase)}

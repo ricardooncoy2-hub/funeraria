@@ -7,6 +7,7 @@ export interface Servicio {
   descripcion: string | null;
   precioBase: string;
   afectoIgv: boolean;
+  imagenUrl: string | null;
 }
 
 export function fetchServicios(): Promise<Servicio[]> {

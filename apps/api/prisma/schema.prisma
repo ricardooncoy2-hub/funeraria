@@ -254,6 +254,7 @@ model Service {
   descripcion String?   @db.Text
   precioBase  Decimal   @map("precio_base") @db.Decimal(12, 2)
   afectoIgv   Boolean   @default(true) @map("afecto_igv")
+  imagenUrl   String?   @map("imagen_url") @db.VarChar(500)
   isActive    Boolean   @default(true) @map("is_active")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")

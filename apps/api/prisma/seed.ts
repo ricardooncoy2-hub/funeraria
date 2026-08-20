@@ -145,17 +145,17 @@ const PRODUCTS = [
 ] as const;
 
 const SERVICES = [
-  { codigo: 'SRV-001', nombre: 'Velatorio 24 horas', precioBase: 900.0 },
-  { codigo: 'SRV-002', nombre: 'Velatorio 48 horas', precioBase: 1500.0 },
-  { codigo: 'SRV-003', nombre: 'Servicio de Cremación', precioBase: 1800.0 },
-  { codigo: 'SRV-004', nombre: 'Servicio de Inhumación', precioBase: 1200.0 },
-  { codigo: 'SRV-005', nombre: 'Traslado de Cuerpo (local)', precioBase: 250.0 },
-  { codigo: 'SRV-006', nombre: 'Traslado de Cuerpo (interprovincial)', precioBase: 800.0 },
-  { codigo: 'SRV-007', nombre: 'Embalsamamiento / Tanatopraxia', precioBase: 600.0 },
-  { codigo: 'SRV-008', nombre: 'Trámites Documentarios', precioBase: 150.0 },
-  { codigo: 'SRV-009', nombre: 'Servicio Religioso', precioBase: 300.0 },
-  { codigo: 'SRV-010', nombre: 'Transporte de Familiares', precioBase: 200.0 },
-  { codigo: 'SRV-011', nombre: 'Alquiler de Carroza Fúnebre', precioBase: 400.0 },
+  { codigo: 'SRV-001', nombre: 'Velatorio 24 horas', precioBase: 900.0, imagenUrl: '/fotos/servicios/velatorio-24h.jpg' },
+  { codigo: 'SRV-002', nombre: 'Velatorio 48 horas', precioBase: 1500.0, imagenUrl: '/fotos/servicios/velatorio-48h.jpg' },
+  { codigo: 'SRV-003', nombre: 'Servicio de Cremación', precioBase: 1800.0, imagenUrl: '/fotos/servicios/cremacion.jpg' },
+  { codigo: 'SRV-004', nombre: 'Servicio de Inhumación', precioBase: 1200.0, imagenUrl: '/fotos/servicios/inhumacion.jpg' },
+  { codigo: 'SRV-005', nombre: 'Traslado de Cuerpo (local)', precioBase: 250.0, imagenUrl: '/fotos/servicios/traslado-local.jpg' },
+  { codigo: 'SRV-006', nombre: 'Traslado de Cuerpo (interprovincial)', precioBase: 800.0, imagenUrl: '/fotos/servicios/traslado-interprovincial.jpg' },
+  { codigo: 'SRV-007', nombre: 'Embalsamamiento / Tanatopraxia', precioBase: 600.0, imagenUrl: '/fotos/servicios/embalsamamiento.jpg' },
+  { codigo: 'SRV-008', nombre: 'Trámites Documentarios', precioBase: 150.0, imagenUrl: '/fotos/servicios/tramites.jpg' },
+  { codigo: 'SRV-009', nombre: 'Servicio Religioso', precioBase: 300.0, imagenUrl: '/fotos/servicios/servicio-religioso.jpg' },
+  { codigo: 'SRV-010', nombre: 'Transporte de Familiares', precioBase: 200.0, imagenUrl: '/fotos/servicios/transporte-familiares.jpg' },
+  { codigo: 'SRV-011', nombre: 'Alquiler de Carroza Fúnebre', precioBase: 400.0, imagenUrl: '/fotos/servicios/carroza-funebre.jpg' },
 ] as const;
 
 const PLANS = [
@@ -358,8 +358,13 @@ async function main() {
   for (const servicio of SERVICES) {
     await prisma.service.upsert({
       where: { codigo: servicio.codigo },
-      update: {},
-      create: { codigo: servicio.codigo, nombre: servicio.nombre, precioBase: servicio.precioBase },
+      update: { imagenUrl: servicio.imagenUrl },
+      create: {
+        codigo: servicio.codigo,
+        nombre: servicio.nombre,
+        precioBase: servicio.precioBase,
+        imagenUrl: servicio.imagenUrl,
+      },
     });
   }
   const servicios = await prisma.service.findMany();
