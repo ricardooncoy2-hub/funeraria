@@ -129,19 +129,19 @@ const PRODUCT_CATEGORIES = [
 ] as const;
 
 const PRODUCTS = [
-  { codigo: 'ATD-001', nombre: 'Ataúd Clásico', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 1500.0, stockInicial: 15, stockMinimo: 3 },
-  { codigo: 'ATD-002', nombre: 'Ataúd Económico', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 800.0, stockInicial: 15, stockMinimo: 3 },
-  { codigo: 'ATD-003', nombre: 'Ataúd de Lujo', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 3500.0, stockInicial: 8, stockMinimo: 2 },
-  { codigo: 'ATD-004', nombre: 'Ataúd Infantil', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 600.0, stockInicial: 5, stockMinimo: 2 },
-  { codigo: 'URN-001', nombre: 'Urna de Cerámica', categoria: 'Urnas y Cofres', unidadMedida: 'UND', precioVenta: 250.0, stockInicial: 20, stockMinimo: 5 },
-  { codigo: 'URN-002', nombre: 'Urna Metálica', categoria: 'Urnas y Cofres', unidadMedida: 'UND', precioVenta: 450.0, stockInicial: 15, stockMinimo: 5 },
-  { codigo: 'URN-003', nombre: 'Urna de Madera Tallada', categoria: 'Urnas y Cofres', unidadMedida: 'UND', precioVenta: 600.0, stockInicial: 10, stockMinimo: 3 },
-  { codigo: 'FLO-001', nombre: 'Arreglo Floral Clásico', categoria: 'Arreglos Florales', unidadMedida: 'UND', precioVenta: 180.0, stockInicial: 25, stockMinimo: 5 },
-  { codigo: 'FLO-002', nombre: 'Arreglo Floral Premium', categoria: 'Arreglos Florales', unidadMedida: 'UND', precioVenta: 350.0, stockInicial: 15, stockMinimo: 5 },
-  { codigo: 'FLO-003', nombre: 'Corona Fúnebre', categoria: 'Arreglos Florales', unidadMedida: 'UND', precioVenta: 220.0, stockInicial: 20, stockMinimo: 5 },
-  { codigo: 'ACC-001', nombre: 'Kit de Cirios y Velas', categoria: 'Accesorios y Insumos', unidadMedida: 'UND', precioVenta: 50.0, stockInicial: 40, stockMinimo: 10 },
-  { codigo: 'ACC-002', nombre: 'Libro de Condolencias', categoria: 'Accesorios y Insumos', unidadMedida: 'UND', precioVenta: 40.0, stockInicial: 30, stockMinimo: 10 },
-  { codigo: 'ACC-003', nombre: 'Crucifijo Ornamental', categoria: 'Accesorios y Insumos', unidadMedida: 'UND', precioVenta: 60.0, stockInicial: 30, stockMinimo: 10 },
+  { codigo: 'ATD-001', nombre: 'Ataúd Clásico', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 1500.0, stockInicial: 15, stockMinimo: 3, imagenUrl: '/fotos/catalogo-figaro-frances.jpg' },
+  { codigo: 'ATD-002', nombre: 'Ataúd Económico', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 800.0, stockInicial: 15, stockMinimo: 3, imagenUrl: '/fotos/catalogo-lincoln-redondo.jpg' },
+  { codigo: 'ATD-003', nombre: 'Ataúd de Lujo', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 3500.0, stockInicial: 8, stockMinimo: 2, imagenUrl: '/fotos/catalogo-faraon.jpg' },
+  { codigo: 'ATD-004', nombre: 'Ataúd Infantil', categoria: 'Ataudes', unidadMedida: 'UND', precioVenta: 600.0, stockInicial: 5, stockMinimo: 2, imagenUrl: '/fotos/productos/casket-modesto.jpg' },
+  { codigo: 'URN-001', nombre: 'Urna de Cerámica', categoria: 'Urnas y Cofres', unidadMedida: 'UND', precioVenta: 250.0, stockInicial: 20, stockMinimo: 5, imagenUrl: '/fotos/productos/urna-ceramica.jpg' },
+  { codigo: 'URN-002', nombre: 'Urna Metálica', categoria: 'Urnas y Cofres', unidadMedida: 'UND', precioVenta: 450.0, stockInicial: 15, stockMinimo: 5, imagenUrl: '/fotos/productos/urna-metalica.jpg' },
+  { codigo: 'URN-003', nombre: 'Urna de Madera Tallada', categoria: 'Urnas y Cofres', unidadMedida: 'UND', precioVenta: 600.0, stockInicial: 10, stockMinimo: 3, imagenUrl: '/fotos/productos/urna-madera.jpg' },
+  { codigo: 'FLO-001', nombre: 'Arreglo Floral Clásico', categoria: 'Arreglos Florales', unidadMedida: 'UND', precioVenta: 180.0, stockInicial: 25, stockMinimo: 5, imagenUrl: '/fotos/productos/arreglo-floral-clasico.jpg' },
+  { codigo: 'FLO-002', nombre: 'Arreglo Floral Premium', categoria: 'Arreglos Florales', unidadMedida: 'UND', precioVenta: 350.0, stockInicial: 15, stockMinimo: 5, imagenUrl: '/fotos/productos/arreglo-floral-premium.jpg' },
+  { codigo: 'FLO-003', nombre: 'Corona Fúnebre', categoria: 'Arreglos Florales', unidadMedida: 'UND', precioVenta: 220.0, stockInicial: 20, stockMinimo: 5, imagenUrl: '/fotos/productos/corona-funebre.jpg' },
+  { codigo: 'ACC-001', nombre: 'Kit de Cirios y Velas', categoria: 'Accesorios y Insumos', unidadMedida: 'UND', precioVenta: 50.0, stockInicial: 40, stockMinimo: 10, imagenUrl: '/fotos/productos/cirios-velas.jpg' },
+  { codigo: 'ACC-002', nombre: 'Libro de Condolencias', categoria: 'Accesorios y Insumos', unidadMedida: 'UND', precioVenta: 40.0, stockInicial: 30, stockMinimo: 10, imagenUrl: '/fotos/productos/libro-condolencias.jpg' },
+  { codigo: 'ACC-003', nombre: 'Crucifijo Ornamental', categoria: 'Accesorios y Insumos', unidadMedida: 'UND', precioVenta: 60.0, stockInicial: 30, stockMinimo: 10, imagenUrl: '/fotos/productos/crucifijo.jpg' },
 ] as const;
 
 const SERVICES = [
@@ -323,13 +323,14 @@ async function main() {
     if (!categoria) continue;
     await prisma.product.upsert({
       where: { codigo: producto.codigo },
-      update: {},
+      update: { imagenUrl: producto.imagenUrl },
       create: {
         codigo: producto.codigo,
         nombre: producto.nombre,
         categoriaProductoId: categoria.id,
         unidadMedida: producto.unidadMedida,
         precioVenta: producto.precioVenta,
+        imagenUrl: producto.imagenUrl,
       },
     });
   }
