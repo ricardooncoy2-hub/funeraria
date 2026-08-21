@@ -27,9 +27,12 @@ FROM node:20-slim AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 RUN groupadd --system nodejs && useradd --system --gid nodejs nextjs
-COPY --from=builder /repo/apps/web/.next/standalone ./
-COPY --from=builder /repo/apps/web/.next/static ./apps/web/.next/static
-COPY --from=builder /repo/apps/web/public ./apps/web/public
+# `COPY --from=builder` corre como root; sin --chown, apps/web/.next queda de
+# root y Next no puede crear apps/web/.next/cache en runtime como usuario
+# `nextjs` (cache de optimización de imágenes) — EACCES.
+COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/public ./apps/web/public
 USER nextjs
 EXPOSE 3000
 CMD ["node", "apps/web/server.js"]
