@@ -22,11 +22,11 @@ export interface PlanDetail extends Plan {
 }
 
 export function fetchPlanes(): Promise<Plan[]> {
-  return apiFetchList<Plan>("/public/planes", { next: { revalidate: 3600 } });
+  return apiFetchList<Plan>("/public/planes", { next: { revalidate: 60 } });
 }
 
 export function fetchPlan(codigo: string): Promise<PlanDetail> {
   return apiFetch<PlanDetail>(`/public/planes/${encodeURIComponent(codigo)}`, {
-    next: { revalidate: 3600 },
+    next: { revalidate: 60 },
   });
 }

@@ -13,5 +13,5 @@ export interface Producto {
 }
 
 export function fetchProductos(): Promise<Producto[]> {
-  return apiFetchList<Producto>("/public/productos", { next: { revalidate: 3600 } });
+  return apiFetchList<Producto>("/public/productos", { next: { revalidate: 60 } });
 }

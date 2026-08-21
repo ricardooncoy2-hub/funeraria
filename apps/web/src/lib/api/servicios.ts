@@ -11,11 +11,11 @@ export interface Servicio {
 }
 
 export function fetchServicios(): Promise<Servicio[]> {
-  return apiFetchList<Servicio>("/public/servicios", { next: { revalidate: 3600 } });
+  return apiFetchList<Servicio>("/public/servicios", { next: { revalidate: 60 } });
 }
 
 export function fetchServicio(codigo: string): Promise<Servicio> {
   return apiFetch<Servicio>(`/public/servicios/${encodeURIComponent(codigo)}`, {
-    next: { revalidate: 3600 },
+    next: { revalidate: 60 },
   });
 }

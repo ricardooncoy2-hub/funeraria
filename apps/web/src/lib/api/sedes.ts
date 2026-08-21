@@ -30,5 +30,5 @@ export interface Sede {
 }
 
 export function fetchSedes(): Promise<Sede[]> {
-  return apiFetchList<Sede>("/public/sedes", { next: { revalidate: 3600 } });
+  return apiFetchList<Sede>("/public/sedes", { next: { revalidate: 60 } });
 }
