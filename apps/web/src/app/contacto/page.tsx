@@ -6,8 +6,7 @@ import { Container } from "@/components/ui/container";
 import { PageHeader } from "@/components/ui/page-header";
 import { fetchPlanes } from "@/lib/api/planes";
 import { fetchSedes } from "@/lib/api/sedes";
-
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "51999999999";
+import { WHATSAPP_NUMBER } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Contacto",

@@ -1,6 +1,6 @@
 import { MessageCircle } from "lucide-react";
+import { WHATSAPP_NUMBER } from "@/lib/site-config";
 
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "51999999999";
 const MENSAJE_PRELLENADO = "Hola, quisiera más información sobre sus servicios.";
 
 /**

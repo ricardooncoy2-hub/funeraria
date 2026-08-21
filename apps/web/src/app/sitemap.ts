@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 import { fetchPlanes } from "@/lib/api/planes";
 import { fetchServicios } from "@/lib/api/servicios";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+import { SITE_URL } from "@/lib/site-config";
 
 const RUTAS_ESTATICAS: { path: string; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number }[] = [
   { path: "/", changeFrequency: "monthly", priority: 1 },

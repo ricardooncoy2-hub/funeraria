@@ -9,8 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ApiError } from "@/lib/api/client";
 import { fetchPlan } from "@/lib/api/planes";
 import { formatMoney } from "@/lib/format";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+import { SITE_URL } from "@/lib/site-config";
 
 /** `cache()` memoiza por request — ver nota en `servicios/[codigo]/page.tsx`. */
 const getPlan = cache(async (codigo: string) => {

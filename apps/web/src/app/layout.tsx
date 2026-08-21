@@ -3,6 +3,7 @@ import { Inter, Lora } from "next/font/google";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { WhatsAppButton } from "@/components/layout/whatsapp-button";
+import { SITE_URL } from "@/lib/site-config";
 import "./globals.css";
 
 const inter = Inter({
@@ -17,8 +18,6 @@ const lora = Lora({
   subsets: ["latin"],
   display: "swap",
 });
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 const DESCRIPCION =
   "Servicios funerarios, planes a futuro y acompañamiento cercano para su familia. Cotice en línea o escríbanos por WhatsApp.";

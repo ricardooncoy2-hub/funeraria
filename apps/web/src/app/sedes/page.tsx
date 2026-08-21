@@ -4,14 +4,13 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { Container } from "@/components/ui/container";
 import { PageHeader } from "@/components/ui/page-header";
 import { fetchSedes, type Sede } from "@/lib/api/sedes";
+import { SITE_URL } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Sedes",
   description: "Ubicación, teléfono y horario de las sedes de Funeraria Minaya.",
   alternates: { canonical: "/sedes" },
 };
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 /** CA-SEO-03: JSON-LD `LocalBusiness` por sede, solo cuando el NAP está completo. */
 function localBusinessJsonLd(sede: Sede) {

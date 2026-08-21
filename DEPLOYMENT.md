@@ -59,35 +59,34 @@ services:
     ports: ["3001:3001"]
 ```
 
-Y ajustar los `.env.*` del paso 3 con la IP en vez del dominio:
+Y ajustar los `.env.*` del paso 3 con la IP en vez del dominio — **incluido el
+`.env` raíz**, que es el que de verdad usa `docker compose build`:
 
 ```ini
 # .env.api
 CORS_ORIGINS="http://IP_DEL_VPS:3000,http://IP_DEL_VPS:3002"
 ```
 ```ini
-# .env.web
+# .env (raíz) y .env.web
 NEXT_PUBLIC_API_URL="http://IP_DEL_VPS:3001/api/v1"
 NEXT_PUBLIC_SITE_URL="http://IP_DEL_VPS:3000"
 ```
 ```ini
-# .env.admin
+# .env.admin (NEXT_PUBLIC_API_URL también debe coincidir en el .env raíz)
 NEXT_PUBLIC_API_URL="http://IP_DEL_VPS:3001/api/v1"
 ```
 
 > Importante: `NEXT_PUBLIC_*` se hornea dentro del bundle de Next.js **en build time**,
-> no se lee en runtime. Estos valores deben estar correctos en `.env.web`/`.env.admin`
-> *antes* de correr `docker compose build` — si se cambian después, hay que
-> reconstruir la imagen, no solo reiniciar el contenedor.
+> no se lee en runtime. Estos valores deben estar correctos *antes* de correr
+> `docker compose build` — si se cambian después, hay que reconstruir la
+> imagen, no solo reiniciar el contenedor.
 
-Luego, seguir la secuencia del paso 6 (api primero, luego web/admin con su propio
-`--env-file`), sin `nginx`:
+Luego, seguir la secuencia del paso 6 (api primero, luego web/admin), sin `nginx`:
 
 ```bash
 docker compose build api
 docker compose up -d api
-docker compose --env-file .env.web build web
-docker compose --env-file .env.admin build admin
+docker compose build web admin
 docker compose up -d web admin   # sin nginx
 ```
 
@@ -160,7 +159,16 @@ Copiar los templates y completarlos (nunca se versionan, están en `.gitignore`)
 cp .env.api.example .env.api
 cp .env.web.example .env.web
 cp .env.admin.example .env.admin
+cp .env.example .env
 ```
+
+El último (`.env`, sin sufijo) es distinto a los demás: no es el `env_file` de
+ningún contenedor, es el archivo que **Docker Compose lee automáticamente**
+para resolver `${...}` dentro del propio `docker-compose.yml` — hoy sirve para
+que `build.args` de `web`/`admin` reciba `NEXT_PUBLIC_API_URL`,
+`NEXT_PUBLIC_SITE_URL` y `NEXT_PUBLIC_WHATSAPP_NUMBER` en **cualquier**
+invocación de `docker compose build`, sin depender de pasar `--env-file` a
+mano. Sus valores deben coincidir con los de `.env.web`/`.env.admin`.
 
 **`.env.api`** — editar:
 
@@ -192,11 +200,19 @@ los valores por defecto del template ya están bien estructurados.
 > **Importante sobre `NEXT_PUBLIC_*`:** Next.js hornea estas variables dentro del
 > bundle del navegador **en build time**, no en runtime — el `env_file:` de Compose
 > solo aplica al contenedor ya corriendo, no al build de la imagen. Por eso
-> `docker-compose.yml` además declara `build.args` para `web`/`admin` que leen
-> `${NEXT_PUBLIC_API_URL}` etc. desde el entorno de la propia invocación de
-> `docker compose build` — ver el comando con `--env-file` en el paso 6. Si se
-> cambia un valor `NEXT_PUBLIC_*` después de un build, hay que reconstruir la
-> imagen, no solo reiniciar el contenedor.
+> `docker-compose.yml` declara `build.args` para `web`/`admin` que leen
+> `${NEXT_PUBLIC_API_URL}` etc. del `.env` raíz creado arriba. Si se cambia un
+> valor `NEXT_PUBLIC_*` después de un build, hay que reconstruir la imagen, no
+> solo reiniciar el contenedor.
+>
+> Si por error el build corre sin que estas variables se resuelvan (p. ej. un
+> `.env` raíz vacío o ausente), Compose las pasa como **string vacío**, no
+> como variable ausente — un `??` en el código no cae a su valor por defecto
+> ante un string vacío, solo ante `undefined`/`null`. Esto ya causó un build
+> roto (`new URL("")` revienta con `ERR_INVALID_URL`) y quedó corregido en el
+> código (`apps/web/src/lib/site-config.ts`, `apps/*/src/lib/api/client.ts`
+> usan `||`), pero conviene igual no depender de ese blindaje y asegurarse de
+> que `.env` esté bien completado antes de construir.
 
 ## 4. Configurar Nginx
 
@@ -248,12 +264,11 @@ docker compose build api
 docker compose up -d api
 docker compose logs api --tail=30   # confirmar "Nest application successfully started"
 
-# 2) web y admin — cada uno con su propio .env.* para que las variables
-#    NEXT_PUBLIC_* del build.args se resuelvan correctamente (ver nota del paso 3).
-#    `web` usa `network: default` (ver docker-compose.yml) para alcanzar el
-#    contenedor `api` ya corriendo durante su propio `next build`.
-docker compose --env-file .env.web build web
-docker compose --env-file .env.admin build admin
+# 2) web y admin — el `.env` raíz del paso 3 resuelve NEXT_PUBLIC_* del
+#    build.args automáticamente, no hace falta --env-file. `web` usa
+#    `network: default` (ver docker-compose.yml) para alcanzar el contenedor
+#    `api` ya corriendo durante su propio `next build`.
+docker compose build web admin
 
 # 3) levantar todo
 docker compose up -d web admin nginx

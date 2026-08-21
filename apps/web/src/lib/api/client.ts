@@ -9,8 +9,11 @@ import { ApiError, parseApiError } from "./errors";
  * de `next build` en Docker falla con ECONNREFUSED: el contenedor `api` no
  * es alcanzable en `localhost` desde el contenedor de build de `web`.
  */
+// `||` en vez de `??`: si el build.args de Docker no resuelve la variable,
+// Compose la pasa como string vacío, no como `undefined` — `??` no caería al
+// fallback en ese caso (ver apps/web/src/lib/site-config.ts).
 const API_URL =
-  process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
+  process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
 /**
  * Cliente del sitio público — sin sesión, sin token, sin cookies. Los

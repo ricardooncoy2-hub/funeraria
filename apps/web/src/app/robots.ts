@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+import { SITE_URL } from "@/lib/site-config";
 
 /**
  * CA-SEO-02: el panel admin (`apps/admin`) es un despliegue aparte

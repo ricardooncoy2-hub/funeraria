@@ -1,7 +1,10 @@
 import { useAuthStore } from "../auth/auth-store";
 import { ApiError, parseApiError } from "./errors";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
+// `||` en vez de `??`: si el build.args de Docker no resuelve la variable,
+// Compose la pasa como string vacío, no como `undefined` — `??` no caería al
+// fallback en ese caso.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
 /**
  * Fetch "crudo": sin token de acceso, con cookies (para /auth/login,
