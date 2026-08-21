@@ -1,18 +1,6 @@
 # Despliegue de SERVIDOR (staging/producción). NO usar para desarrollo local
 # (ver docs/26_infraestructura.md §26.10 y docs/27_docker.md). En local: MariaDB
 # y Node nativos + `pnpm dev`.
-#
-# MariaDB NO vive en este archivo — se despliega por separado desde
-# docker/mariadb/docker-compose.yml (vida útil y red propias, aislada de
-# internet con `internal: true`; ver ADR en docs/34_decisiones_arquitectonicas.md).
-# Ese compose debe estar arriba y sano ANTES de levantar `api` acá — Compose
-# no puede expresar `depends_on` entre archivos/proyectos distintos, así que
-# el orden es responsabilidad del operador (ver DEPLOYMENT.md).
-
-networks:
-  backend:
-    external: true
-    name: funeraria_backend
 
 services:
   nginx:
@@ -56,12 +44,45 @@ services:
       dockerfile: apps/api/Dockerfile
     env_file: .env.api
     # `default` (implícito, para hablar con nginx/web/admin) + `backend`
-    # (externa, para llegar a MariaDB) — el único servicio de este archivo
-    # que necesita la red de MariaDB.
+    # (para llegar a MariaDB) — el único servicio que necesita esa red.
     networks:
       - default
       - backend
+    depends_on:
+      mariadb:
+        condition: service_healthy
     restart: unless-stopped
+
+  mariadb:
+    image: mariadb:11.8.8
+    container_name: funeraria-mariadb
+    networks:
+      - backend
+    env_file: .env.mariadb
+    volumes:
+      - /srv/funeraria/mariadb:/var/lib/mysql
+    # Collation obligatoria del proyecto (ADR-002 / docs/11): NO utf8mb4_0900_ai_ci.
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_uca1400_ai_ci
+    # NO exponer el puerto de MariaDB al host en producción.
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  # `internal: true`: sin ruta a internet ni a ninguna otra red — solo lo que
+  # esté explícitamente conectado a `backend` (hoy, únicamente `api`) puede
+  # alcanzar a MariaDB. Ni `web`, ni `admin`, ni `nginx` tienen ruta de red
+  # hacia la base de datos. Nombre fijo (`name:`) para que comandos operativos
+  # puntuales (p. ej. el seed inicial, ver DEPLOYMENT.md) no dependan de
+  # adivinar el nombre real según el directorio/proyecto de Compose.
+  backend:
+    name: funeraria_backend
+    internal: true
 
 volumes:
   certs:
