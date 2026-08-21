@@ -8,6 +8,19 @@ WORKDIR /repo
 FROM base AS builder
 COPY . .
 RUN pnpm install --frozen-lockfile
+# NEXT_PUBLIC_* se hornean en el bundle del navegador en build time.
+# API_INTERNAL_URL (sin prefijo NEXT_PUBLIC_, nunca llega al navegador) es lo
+# que usan las peticiones que corren en Node durante el prerender estático de
+# `next build` — necesita la red de Docker Compose para alcanzar `api`
+# (ver `network: default` en docker-compose.yml para este servicio).
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SITE_URL
+ARG NEXT_PUBLIC_WHATSAPP_NUMBER
+ARG API_INTERNAL_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    NEXT_PUBLIC_WHATSAPP_NUMBER=$NEXT_PUBLIC_WHATSAPP_NUMBER \
+    API_INTERNAL_URL=$API_INTERNAL_URL
 RUN pnpm --filter @funeraria-minaya/web run build
 
 FROM node:20-slim AS runner

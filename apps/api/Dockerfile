@@ -12,7 +12,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @funeraria-minaya/api exec prisma generate
 RUN pnpm --filter @funeraria-minaya/api run build
-RUN pnpm --filter @funeraria-minaya/api deploy --prod /repo/deploy/api
+RUN pnpm --filter @funeraria-minaya/api deploy --prod --legacy /repo/deploy/api
 
 FROM base AS runner
 ENV NODE_ENV=production

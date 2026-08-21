@@ -22,6 +22,97 @@ funeraria-mariadb   mariadb:11.8.8   "docker-entrypoint.s…"   mariadb   8 minu
 MariaDB corriendo y sano, sin puerto expuesto al host (correcto — nunca debe exponerse
 públicamente). Falta desplegar `web`, `admin`, `api` y `nginx`.
 
+## Variante: sin dominio, acceso solo por IP
+
+Si todavía no hay dominio y solo se quiere ver la aplicación por `http://IP_DEL_VPS`,
+es posible, con dos ajustes respecto al flujo con dominio:
+
+1. **Nginx y Cloudflare no aplican todavía** — sin dominio no hay a qué apuntar el
+   `server_name` de cada bloque (`docs/26_infraestructura.md` §26.2 asume nombres de
+   host, no una sola IP repartida en varios sitios). Saltar los pasos **4 (Nginx)** y
+   **5 (DNS)** de abajo; en su lugar, publicar el puerto de cada contenedor
+   directamente hacia el VPS.
+
+2. **La sesión del admin no se renueva sola sin HTTPS.** El refresh token va en una
+   cookie `httpOnly` que el backend marca `secure: true` cuando `NODE_ENV=production`
+   (`apps/api/src/modules/auth/auth.controller.ts:109`) — un navegador nunca guarda ni
+   reenvía una cookie `Secure` sobre HTTP plano. El login inicial sí funciona igual
+   (el `accessToken` viaja en el body de la respuesta, no en cookie), pero al expirar
+   ese access token (`JWT_ACCESS_EXPIRES`, 15 min por defecto) el refresh silencioso
+   fallará y tocará volver a iniciar sesión. Para esta fase de solo-vista es aceptable;
+   si molesta, subir `JWT_ACCESS_EXPIRES` a algo como `2h` solo mientras se prueba por
+   IP, y devolverlo a `15m` en cuanto haya dominio + HTTPS real.
+
+**No editar el `docker-compose.yml` del repo** (se necesita intacto para cuando haya
+dominio) — crear en su lugar `docker-compose.override.yml` en `/srv/funeraria/stack`,
+que Compose combina automáticamente con el base:
+
+```yaml
+# docker-compose.override.yml — solo para la fase sin dominio (acceso por IP).
+# Borrar este archivo cuando haya dominio real y se use Nginx.
+services:
+  web:
+    ports: ["3000:3000"]
+  admin:
+    ports: ["3002:3000"]
+  api:
+    ports: ["3001:3001"]
+```
+
+Y ajustar los `.env.*` del paso 3 con la IP en vez del dominio:
+
+```ini
+# .env.api
+CORS_ORIGINS="http://IP_DEL_VPS:3000,http://IP_DEL_VPS:3002"
+```
+```ini
+# .env.web
+NEXT_PUBLIC_API_URL="http://IP_DEL_VPS:3001/api/v1"
+NEXT_PUBLIC_SITE_URL="http://IP_DEL_VPS:3000"
+```
+```ini
+# .env.admin
+NEXT_PUBLIC_API_URL="http://IP_DEL_VPS:3001/api/v1"
+```
+
+> Importante: `NEXT_PUBLIC_*` se hornea dentro del bundle de Next.js **en build time**,
+> no se lee en runtime. Estos valores deben estar correctos en `.env.web`/`.env.admin`
+> *antes* de correr `docker compose build` — si se cambian después, hay que
+> reconstruir la imagen, no solo reiniciar el contenedor.
+
+Luego, seguir la secuencia del paso 6 (api primero, luego web/admin con su propio
+`--env-file`), sin `nginx`:
+
+```bash
+docker compose build api
+docker compose up -d api
+docker compose --env-file .env.web build web
+docker compose --env-file .env.admin build admin
+docker compose up -d web admin   # sin nginx
+```
+
+Y verificar (paso 8) directo por puerto:
+
+```bash
+curl -I http://IP_DEL_VPS:3001/api/v1/health
+curl -I http://IP_DEL_VPS:3000
+curl -I http://IP_DEL_VPS:3002
+```
+
+El resto del procedimiento (§1-3, §6-7 con las adaptaciones de arriba) aplica igual.
+
+**Firewall:** `docs/26_infraestructura.md` §26.3 recomienda `ufw` abierto solo en
+80/443. Para esta variante hay que abrir también 3000-3002 temporalmente:
+
+```bash
+sudo ufw allow 3000/tcp
+sudo ufw allow 3001/tcp
+sudo ufw allow 3002/tcp
+```
+
+Y cerrarlos (`sudo ufw delete allow <puerto>/tcp`) cuando se pase a Nginx + dominio,
+para no dejar la API/admin expuestos directamente además de por Nginx.
+
 ## 0. Detalle importante de estructura
 
 El `docker-compose.yml` del repo usa `context: .` (raíz del monorepo) para los tres
@@ -98,7 +189,19 @@ los valores por defecto del template ya están bien estructurados.
 > no se usan en el código todavía, aunque `docs/26`/`docs/27` los mencionan como parte
 > de la arquitectura futura) — no hace falta configurarlos para este despliegue.
 
+> **Importante sobre `NEXT_PUBLIC_*`:** Next.js hornea estas variables dentro del
+> bundle del navegador **en build time**, no en runtime — el `env_file:` de Compose
+> solo aplica al contenedor ya corriendo, no al build de la imagen. Por eso
+> `docker-compose.yml` además declara `build.args` para `web`/`admin` que leen
+> `${NEXT_PUBLIC_API_URL}` etc. desde el entorno de la propia invocación de
+> `docker compose build` — ver el comando con `--env-file` en el paso 6. Si se
+> cambia un valor `NEXT_PUBLIC_*` después de un build, hay que reconstruir la
+> imagen, no solo reiniciar el contenedor.
+
 ## 4. Configurar Nginx
+
+> Saltar este paso y el siguiente si se está usando la variante "sin dominio" de
+> arriba.
 
 ```bash
 cp nginx/conf.d/default.conf.example nginx/conf.d/default.conf
@@ -127,14 +230,34 @@ Registros A (o CNAME si se usa proxy) apuntando a la IP del VPS:
 
 ## 6. Levantar el resto del stack
 
+> Con la variante "sin dominio", omitir `nginx` de los comandos de abajo (ver arriba).
+
+**`api` va primero, no junto con `web`/`admin`.** `apps/web` hace `fetch()` en Server
+Components durante el propio `next build` (prerender estático de `/`, `/servicios`,
+etc.) — si `api` no está corriendo *antes* de construir la imagen de `web`, el build
+falla con `ECONNREFUSED`/`ConnectTimeoutError` (el contenedor de build no tiene forma
+de alcanzar una API que no existe todavía). `apps/admin` es una SPA autenticada sin
+fetch en Server Components, así que no tiene esta restricción, pero de todas formas
+conviene construirlo después de `api` para no complicar la secuencia.
+
 ```bash
 cd /srv/funeraria/stack
-docker compose build web admin api
-docker compose up -d web admin api nginx
-```
 
-`mariadb` sigue como está (`depends_on: condition: service_healthy` hará que `api`
-espere si tuviera que recrearse, pero como ya está healthy, arranca directo).
+# 1) api primero — mariadb ya está healthy, api corre sus migraciones al arrancar.
+docker compose build api
+docker compose up -d api
+docker compose logs api --tail=30   # confirmar "Nest application successfully started"
+
+# 2) web y admin — cada uno con su propio .env.* para que las variables
+#    NEXT_PUBLIC_* del build.args se resuelvan correctamente (ver nota del paso 3).
+#    `web` usa `network: default` (ver docker-compose.yml) para alcanzar el
+#    contenedor `api` ya corriendo durante su propio `next build`.
+docker compose --env-file .env.web build web
+docker compose --env-file .env.admin build admin
+
+# 3) levantar todo
+docker compose up -d web admin nginx
+```
 
 La API corre `prisma migrate deploy` automáticamente al iniciar (ya está en el `CMD`
 del Dockerfile) — revisar que haya corrido bien:

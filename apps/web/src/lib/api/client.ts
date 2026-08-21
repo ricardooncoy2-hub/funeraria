@@ -1,6 +1,16 @@
 import { ApiError, parseApiError } from "./errors";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
+/**
+ * `API_INTERNAL_URL` (solo servidor, nunca se expone al navegador — no lleva
+ * prefijo `NEXT_PUBLIC_`) permite que las peticiones que corren en Node
+ * (prerender estático en build, Server Components) usen el nombre interno
+ * del servicio Docker (`http://api:3001/api/v1`), mientras el navegador
+ * sigue usando `NEXT_PUBLIC_API_URL` (dominio/IP pública). Sin esto, el build
+ * de `next build` en Docker falla con ECONNREFUSED: el contenedor `api` no
+ * es alcanzable en `localhost` desde el contenedor de build de `web`.
+ */
+const API_URL =
+  process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
 /**
  * Cliente del sitio público — sin sesión, sin token, sin cookies. Los
