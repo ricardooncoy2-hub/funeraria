@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch, apiFetchList } from "./client";
 
 export interface Plan {
   id: string;
@@ -22,7 +22,7 @@ export interface PlanDetail extends Plan {
 }
 
 export function fetchPlanes(): Promise<Plan[]> {
-  return apiFetch<Plan[]>("/public/planes", { next: { revalidate: 3600 } });
+  return apiFetchList<Plan>("/public/planes", { next: { revalidate: 3600 } });
 }
 
 export function fetchPlan(codigo: string): Promise<PlanDetail> {

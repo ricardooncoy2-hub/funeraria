@@ -248,13 +248,19 @@ Registros A (o CNAME si se usa proxy) apuntando a la IP del VPS:
 
 > Con la variante "sin dominio", omitir `nginx` de los comandos de abajo (ver arriba).
 
-**`api` va primero, no junto con `web`/`admin`.** `apps/web` hace `fetch()` en Server
-Components durante el propio `next build` (prerender estático de `/`, `/servicios`,
-etc.) — si `api` no está corriendo *antes* de construir la imagen de `web`, el build
-falla con `ECONNREFUSED`/`ConnectTimeoutError` (el contenedor de build no tiene forma
-de alcanzar una API que no existe todavía). `apps/admin` es una SPA autenticada sin
-fetch en Server Components, así que no tiene esta restricción, pero de todas formas
-conviene construirlo después de `api` para no complicar la secuencia.
+**Conviene construir `api` primero, aunque ya no es obligatorio.** `apps/web` hace
+`fetch()` en Server Components durante el propio `next build` (prerender estático de
+`/`, `/servicios`, etc.). Si `api` está corriendo y alcanzable por la red de Compose
+(`network: default` en el build de `web`, ver `docker-compose.yml`) en ese momento,
+el build hornea datos reales en el HTML estático. Si no lo está — o si la red de build
+de Docker no está disponible en este servidor, algo que varía según versión de
+Docker/BuildKit y no se puede garantizar en todos los entornos — el build **ya no
+falla**: `apps/web/src/lib/api/client.ts` detecta que corre dentro de `next build`
+(`NEXT_PHASE=phase-production-build`) y las páginas que dependían de ese fetch quedan
+con listas vacías ("Aún no hay servicios publicados.", etc.) hasta la primera
+revalidación real (`revalidate: 3600`, o antes si un visitante la dispara pasada esa
+ventana). Por eso sigue siendo mejor tener `api` arriba antes de construir `web`, pero
+un fallo de red en el build ya no bloquea el despliegue.
 
 ```bash
 cd /srv/funeraria/stack
@@ -265,14 +271,22 @@ docker compose up -d api
 docker compose logs api --tail=30   # confirmar "Nest application successfully started"
 
 # 2) web y admin — el `.env` raíz del paso 3 resuelve NEXT_PUBLIC_* del
-#    build.args automáticamente, no hace falta --env-file. `web` usa
-#    `network: default` (ver docker-compose.yml) para alcanzar el contenedor
-#    `api` ya corriendo durante su propio `next build`.
+#    build.args automáticamente, no hace falta --env-file.
 docker compose build web admin
+# Si en el log de este build aparecen líneas "[build] /public/... no alcanzable
+# durante next build, usando []", el build igual terminó bien, pero home/
+# /servicios/etc. quedaron con datos vacíos — ver nota abajo para forzarlos a
+# refrescar sin esperar la ventana de revalidación.
 
 # 3) levantar todo
 docker compose up -d web admin nginx
 ```
+
+Si el build cayó al fallback vacío, forzar contenido real sin esperar la hora de
+`revalidate`: reconstruir `web` una vez que `api` esté confirmado arriba y
+alcanzable (`docker compose exec web curl -sf http://api:3001/api/v1/health` desde
+dentro de la red, o simplemente reintentar `docker compose build web` — Next vuelve a
+intentar el fetch real en cada build nuevo).
 
 La API corre `prisma migrate deploy` automáticamente al iniciar (ya está en el `CMD`
 del Dockerfile) — revisar que haya corrido bien:

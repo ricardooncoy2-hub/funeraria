@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetchList } from "./client";
 
 export interface Departamento {
   id: string;
@@ -30,5 +30,5 @@ export interface Sede {
 }
 
 export function fetchSedes(): Promise<Sede[]> {
-  return apiFetch<Sede[]>("/public/sedes", { next: { revalidate: 3600 } });
+  return apiFetchList<Sede>("/public/sedes", { next: { revalidate: 3600 } });
 }

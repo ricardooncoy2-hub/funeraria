@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetchList } from "./client";
 
 export interface Producto {
   id: string;
@@ -13,5 +13,5 @@ export interface Producto {
 }
 
 export function fetchProductos(): Promise<Producto[]> {
-  return apiFetch<Producto[]>("/public/productos", { next: { revalidate: 3600 } });
+  return apiFetchList<Producto>("/public/productos", { next: { revalidate: 3600 } });
 }

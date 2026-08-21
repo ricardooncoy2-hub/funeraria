@@ -32,4 +32,28 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+/**
+ * Variante para endpoints de listado que se prerenderizan como página
+ * estática (`/`, `/servicios`, `/productos`, `/planes`, `/sedes`, sitemap):
+ * si la API no es alcanzable durante el propio `next build` — típico en
+ * despliegues nuevos de Docker donde la red entre el contenedor de build y
+ * `api` puede fallar por razones fuera del control de esta app — no revienta
+ * el build entero, sino que degrada a lista vacía. La página queda cacheada
+ * así hasta la próxima revalidación (`revalidate`), momento en que un
+ * visitante real dispara un refetch con datos correctos. Fuera del build
+ * (dev, runtime normal) el error se propaga igual que con `apiFetch`, sin
+ * ocultar fallas reales de la API en producción.
+ */
+export async function apiFetchList<T>(path: string, init: RequestInit = {}): Promise<T[]> {
+  try {
+    return await apiFetch<T[]>(path, init);
+  } catch (error) {
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      console.warn(`[build] ${path} no alcanzable durante next build, usando [] — se completa en runtime.`);
+      return [];
+    }
+    throw error;
+  }
+}
+
 export { ApiError };

@@ -1,4 +1,4 @@
-import { apiFetch } from "./client";
+import { apiFetch, apiFetchList } from "./client";
 
 export interface Servicio {
   id: string;
@@ -11,7 +11,7 @@ export interface Servicio {
 }
 
 export function fetchServicios(): Promise<Servicio[]> {
-  return apiFetch<Servicio[]>("/public/servicios", { next: { revalidate: 3600 } });
+  return apiFetchList<Servicio>("/public/servicios", { next: { revalidate: 3600 } });
 }
 
 export function fetchServicio(codigo: string): Promise<Servicio> {
