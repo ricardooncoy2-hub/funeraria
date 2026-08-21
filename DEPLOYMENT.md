@@ -84,13 +84,14 @@ NEXT_PUBLIC_API_URL="http://IP_DEL_VPS:3001/api/v1"
 > `docker compose build` — si se cambian después, hay que reconstruir la
 > imagen, no solo reiniciar el contenedor.
 
-Luego, seguir la secuencia del paso 6 (api primero, luego web/admin), sin `nginx`:
+Luego, seguir la secuencia del paso 6 (mariadb → api → admin → web), saltando 6.5:
 
 ```bash
-docker compose build api
-docker compose up -d api
-docker compose build web admin
-docker compose up -d web admin   # sin nginx
+docker compose up -d mariadb
+docker compose build api && docker compose up -d api
+docker compose build admin && docker compose up -d admin
+docker compose build web && docker compose up -d web
+# sin nginx (6.5)
 ```
 
 Y verificar (paso 8) directo por puerto:
@@ -254,60 +255,90 @@ Registros A (o CNAME si se usa proxy) apuntando a la IP del VPS:
 - `app.TU-DOMINIO` → admin
 - `api.TU-DOMINIO` → api
 
-## 6. Levantar el resto del stack
+## 6. Levantar el stack, en orden: MariaDB → API → Admin → Web → Nginx
 
-> Con la variante "sin dominio", omitir `nginx` de los comandos de abajo (ver arriba).
+> Con la variante "sin dominio", omitir el paso 6.5 (Nginx) — ver arriba.
 
-**Conviene construir `api` primero, aunque ya no es obligatorio.** `apps/web` hace
-`fetch()` en Server Components durante el propio `next build` (prerender estático de
-`/`, `/servicios`, etc.). Si `api` está corriendo y alcanzable por la red de Compose
-(`network: default` en el build de `web`, ver `docker-compose.yml`) en ese momento,
-el build hornea datos reales en el HTML estático. Si no lo está — o si la red de build
-de Docker no está disponible en este servidor, algo que varía según versión de
-Docker/BuildKit y no se puede garantizar en todos los entornos — el build **ya no
-falla**: `apps/web/src/lib/api/client.ts` detecta que corre dentro de `next build`
-(`NEXT_PHASE=phase-production-build`) y las páginas que dependían de ese fetch quedan
-con listas vacías ("Aún no hay servicios publicados.", etc.) hasta la primera
-revalidación real (`revalidate: 3600`, o antes si un visitante la dispara pasada esa
-ventana). Por eso sigue siendo mejor tener `api` arriba antes de construir `web`, pero
-un fallo de red en el build ya no bloquea el despliegue.
+Un componente a la vez, verificando cada uno antes de seguir con el siguiente. Todos
+los comandos se corren desde `/srv/funeraria/stack` (raíz del repo).
+
+### 6.1 MariaDB
 
 ```bash
-cd /srv/funeraria/stack
-
-# 1) api primero (Compose levanta/espera mariadb solo, por el
-#    depends_on: condition: service_healthy) — api corre sus migraciones al arrancar.
-docker compose build api
-docker compose up -d api
-docker compose logs api --tail=30   # confirmar "Nest application successfully started"
-
-# 2) web y admin — el `.env` raíz del paso 3 resuelve NEXT_PUBLIC_* del
-#    build.args automáticamente, no hace falta --env-file.
-docker compose build web admin
-# Si en el log de este build aparecen líneas "[build] /public/... no alcanzable
-# durante next build, usando []", el build igual terminó bien, pero home/
-# /servicios/etc. quedaron con datos vacíos — ver nota abajo para forzarlos a
-# refrescar sin esperar la ventana de revalidación.
-
-# 3) levantar todo
-docker compose up -d web admin nginx
+docker compose up -d mariadb
+docker compose ps mariadb            # esperar "Up (healthy)" (puede tardar ~10-30s)
+docker compose logs mariadb --tail=20
 ```
 
-Si el build cayó al fallback vacío, forzar contenido real sin esperar la hora de
-`revalidate`: reconstruir `web` una vez que `api` esté confirmado arriba y
-alcanzable (`docker compose exec web curl -sf http://api:3001/api/v1/health` desde
-dentro de la red, o simplemente reintentar `docker compose build web` — Next vuelve a
-intentar el fetch real en cada build nuevo).
+No hace `build` porque usa la imagen oficial (`mariadb:11.8.8`), no un Dockerfile
+propio. Si ya estaba corriendo de antes (ver sección "MariaDB" al inicio de este
+documento), este comando no lo recrea — solo confirma que sigue sano.
 
-La API corre `prisma migrate deploy` automáticamente al iniciar (ya está en el `CMD`
-del Dockerfile) — revisar que haya corrido bien:
+### 6.2 API
 
 ```bash
+docker compose build api
+docker compose up -d api
 docker compose logs api --tail=50
 ```
 
-Buscar algo como `Applying migration...` seguido del arranque de Nest (`Nest
-application successfully started`), sin errores de conexión a `mariadb:3306`.
+Buscar en el log, en este orden: `Applying migration...` (o `No pending
+migrations`) seguido del arranque de Nest (`Nest application successfully
+started`), sin errores de conexión a `mariadb:3306`. Las migraciones
+(`prisma migrate deploy`) corren automáticamente al iniciar el contenedor — están en
+el `CMD` del Dockerfile, no hace falta un paso aparte. `api` espera a que `mariadb`
+esté `healthy` por el `depends_on` del compose, así que no arranca antes de tiempo
+aunque el paso 6.1 haya sido muy reciente.
+
+Verificar que responde (la imagen `node:20-slim` no trae `curl`/`wget`, se usa Node
+directo):
+```bash
+docker compose exec api node -e "require('http').get('http://localhost:3001/api/v1/health',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>console.log(d))})"
+```
+
+### 6.3 Admin
+
+```bash
+docker compose build admin
+docker compose up -d admin
+docker compose logs admin --tail=20
+```
+
+`apps/admin` es una SPA autenticada sin fetch en Server Components — su build no
+depende de que `api` esté arriba (a diferencia de `web`, ver 6.4). Buscar en el log
+`Ready in ...ms` o el arranque normal del server de Next.js, sin errores.
+
+### 6.4 Web
+
+```bash
+docker compose build web
+docker compose up -d web
+docker compose logs web --tail=20
+```
+
+`apps/web` hace `fetch()` en Server Components durante el propio `next build`
+(prerender estático de `/`, `/servicios`, etc.) — como `api` ya está arriba desde el
+paso 6.2, el build intenta alcanzarlo por la red de Compose (`network: default` en el
+build de `web`, ver `docker-compose.yml`) y hornea datos reales en el HTML estático.
+
+Si el log del build muestra líneas como `[build] /public/servicios no alcanzable
+durante next build, usando []`, el build igual terminó bien (no bloquea el
+despliegue — ver `apps/web/src/lib/api/client.ts`), pero home/`/servicios`/etc.
+quedaron con datos vacíos hasta la primera revalidación (`revalidate: 3600`) o hasta
+reconstruir `web` de nuevo una vez confirmado que `api` responde:
+```bash
+docker compose build web && docker compose up -d web
+```
+
+### 6.5 Nginx
+
+```bash
+docker compose up -d nginx
+docker compose ps                    # todo "Up" o "Up (healthy)"
+```
+
+Nginx recién ahora, al final, porque hace de proxy hacia los tres anteriores — no
+tiene sentido levantarlo antes de que `api`/`admin`/`web` existan.
 
 ## 7. Sembrar datos iniciales (una sola vez)
 
