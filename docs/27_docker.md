@@ -8,9 +8,9 @@
 |---|---|---|
 | `nginx` | nginx:alpine | 80/443 |
 | `web` | node (build Next.js público) | 3000 |
-| `app` | node (build Next.js admin) | 3000 |
+| `admin` | node (build Next.js admin) | 3000 |
 | `api` | node (build NestJS) | 3001 |
-| `mariadb` | mariadb:11.8 | 3306 (solo interno) |
+| `mariadb` (compose separado, ver §27.3) | mariadb:11.8 | 3306 (solo interno) |
 | `redis` (opcional) | redis:alpine | 6379 (interno) |
 
 ## 27.2 Estrategia de imágenes
@@ -23,37 +23,21 @@
 
 ## 27.3 docker-compose (estructura conceptual, no configuración final)
 
+**MariaDB vive en un `docker-compose.yml` separado** del resto del stack (ADR-020,
+[34](34_decisiones_arquitectonicas.md)) — vida útil independiente de
+`web`/`admin`/`api`, y una red propia `internal: true` (sin ruta a internet ni a
+ninguna otra red) que el stack principal referencia como `external`, conectando
+*solo* `api` a ella:
+
 ```yaml
+# docker/mariadb/docker-compose.yml — se despliega en su propia carpeta del servidor.
 services:
-  nginx:
-    image: nginx:alpine
-    ports: ["80:80", "443:443"]
-    volumes: [ ./nginx/conf.d:/etc/nginx/conf.d:ro, certs:/etc/nginx/certs:ro ]
-    depends_on: [web, app, api]
-    restart: unless-stopped
-
-  web:
-    build: ./apps/web
-    env_file: .env.web
-    restart: unless-stopped
-
-  app:
-    build: ./apps/admin
-    env_file: .env.admin
-    restart: unless-stopped
-
-  api:
-    build: ./apps/api
-    env_file: .env.api
-    depends_on: [mariadb]
-    restart: unless-stopped
-    # arranque: prisma migrate deploy && node dist/main.js
-
   mariadb:
     image: mariadb:11.8
-    env_file: .env.mariadb
-    volumes: [ mariadb_data:/var/lib/mysql ]   # el datadir de MariaDB sigue siendo /var/lib/mysql
-    # NO exponer puertos al host en producción
+    container_name: funeraria-mariadb
+    networks: [backend]
+    env_file: .env
+    volumes: [ /srv/funeraria/mariadb:/var/lib/mysql ]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
@@ -61,27 +45,70 @@ services:
       timeout: 5s
       retries: 5
 
+networks:
+  backend:
+    name: funeraria_backend   # nombre fijo, referenciado como external abajo
+    internal: true
+```
+
+```yaml
+# docker-compose.yml (raíz del repo) — el resto del stack.
+networks:
+  backend:
+    external: true
+    name: funeraria_backend
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports: ["80:80", "443:443"]
+    volumes: [ ./nginx/conf.d:/etc/nginx/conf.d:ro, certs:/etc/nginx/certs:ro ]
+    depends_on: [web, admin, api]
+    restart: unless-stopped
+
+  web:
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    env_file: .env.web
+    restart: unless-stopped
+
+  admin:
+    build: { context: ., dockerfile: apps/admin/Dockerfile }
+    env_file: .env.admin
+    restart: unless-stopped
+
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    env_file: .env.api
+    networks: [default, backend]   # backend: única forma de llegar a MariaDB
+    restart: unless-stopped
+    # arranque: prisma migrate deploy && node dist/main.js
+
   # redis: (opcional)
 
 volumes:
-  mariadb_data:
   certs:
 ```
 
-> El compose de producción no publica el puerto de MariaDB al host; solo la red interna de Docker lo alcanza.
+> Ni `web`, ni `admin`, ni `nginx` tienen ruta de red hacia MariaDB — solo `api`. El
+> puerto de MariaDB tampoco se publica al host en ningún caso.
+>
+> Compose no expresa `depends_on` entre archivos/proyectos distintos: el operador
+> debe garantizar que el compose de MariaDB esté arriba y sano antes de construir/
+> levantar `api` (ver `DEPLOYMENT.md` en la raíz del repo para el procedimiento
+> paso a paso de un servidor real).
 
 ## 27.4 Variables de entorno (por servicio)
 
 - `api`: `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `S3_*`, `SMTP_*`, `CORS_ORIGINS`, `IGV_PORCENTAJE` (o desde BD), `REDIS_URL?`.
-- `web`/`app`: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `WHATSAPP_NUMBER`, claves de captcha públicas.
-- `mariadb`: `MARIADB_ROOT_PASSWORD`, `MARIADB_DATABASE`, `MARIADB_USER`, `MARIADB_PASSWORD` (la imagen oficial de MariaDB también acepta los equivalentes `MYSQL_*` por compatibilidad).
+- `web`/`admin`: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_WHATSAPP_NUMBER`, claves de captcha públicas.
+- `mariadb` (su propio `.env`, en `docker/mariadb/`, no en el compose principal): `MARIADB_ROOT_PASSWORD`, `MARIADB_DATABASE`, `MARIADB_USER`, `MARIADB_PASSWORD` (la imagen oficial de MariaDB también acepta los equivalentes `MYSQL_*` por compatibilidad).
 
 Los `.env.*` no se versionan; se derivan de `.env.example` documentados.
 
 ## 27.5 Salud y reinicio
 
 - `restart: unless-stopped` en todos.
-- Healthchecks: MariaDB (`healthcheck.sh --connect`), API (`GET /api/v1/health`), web/app (endpoint de salud).
+- Healthchecks: MariaDB (`healthcheck.sh --connect`), API (`GET /api/v1/health`), web/admin (endpoint de salud).
 - Nginx depende de servicios listos; reintenta.
 
 ## 27.6 Migraciones y seed
@@ -91,7 +118,7 @@ Los `.env.*` no se versionan; se derivan de `.env.example` documentados.
 
 ## 27.7 Persistencia y backups
 
-- Volumen `mariadb_data` persistente. Backups gestionados aparte (ver [30](30_backups.md)), no dependientes solo del volumen.
+- MariaDB persiste vía bind mount a una ruta del host (`/srv/funeraria/mariadb`, ver `docker/mariadb/docker-compose.yml`), no un volumen nombrado de Docker — así el dato sobrevive aunque se elimine el compose que lo gestiona. Backups gestionados aparte (ver [30](30_backups.md)), no dependientes solo del propio mount.
 - Archivos en S3 (no en volúmenes de contenedor).
 
 ## 27.8 Recomendaciones

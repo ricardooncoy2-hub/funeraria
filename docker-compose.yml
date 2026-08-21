@@ -1,6 +1,18 @@
 # Despliegue de SERVIDOR (staging/producción). NO usar para desarrollo local
 # (ver docs/26_infraestructura.md §26.10 y docs/27_docker.md). En local: MariaDB
 # y Node nativos + `pnpm dev`.
+#
+# MariaDB NO vive en este archivo — se despliega por separado desde
+# docker/mariadb/docker-compose.yml (vida útil y red propias, aislada de
+# internet con `internal: true`; ver ADR en docs/34_decisiones_arquitectonicas.md).
+# Ese compose debe estar arriba y sano ANTES de levantar `api` acá — Compose
+# no puede expresar `depends_on` entre archivos/proyectos distintos, así que
+# el orden es responsabilidad del operador (ver DEPLOYMENT.md).
+
+networks:
+  backend:
+    external: true
+    name: funeraria_backend
 
 services:
   nginx:
@@ -43,28 +55,13 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     env_file: .env.api
-    depends_on:
-      mariadb:
-        condition: service_healthy
+    # `default` (implícito, para hablar con nginx/web/admin) + `backend`
+    # (externa, para llegar a MariaDB) — el único servicio de este archivo
+    # que necesita la red de MariaDB.
+    networks:
+      - default
+      - backend
     restart: unless-stopped
-
-  mariadb:
-    image: mariadb:11.8
-    env_file: .env.mariadb
-    # Collation obligatoria del proyecto (ADR-002 / docs/11): NO utf8mb4_0900_ai_ci.
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_uca1400_ai_ci
-    volumes:
-      - mariadb_data:/var/lib/mysql
-    # NO exponer el puerto de MariaDB al host en producción.
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
 volumes:
-  mariadb_data:
   certs:

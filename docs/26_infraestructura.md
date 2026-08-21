@@ -68,7 +68,12 @@ Variables por entorno vía archivos `.env` no versionados / secretos.
 ## 26.7 Red y seguridad de infraestructura
 
 - Contenedores en red Docker interna; solo Nginx expone puertos públicos.
-- MariaDB **no** expuesto a internet (solo red interna Docker).
+- MariaDB **no** expuesto a internet (solo red interna Docker) — además, MariaDB se
+  despliega en un `docker compose` separado del stack principal (`docker/mariadb/`),
+  con su propia red `internal: true` referenciada como `external` desde el compose
+  principal; solo el servicio `api` se conecta a ella (ni `web`, ni `admin`, ni
+  `nginx` tienen ruta de red hacia la base de datos). Ver ADR-020 en
+  [34](34_decisiones_arquitectonicas.md) y [27](27_docker.md).
 - TLS obligatorio; HSTS.
 - Backups y almacenamiento con acceso restringido (ver [30](30_backups.md)).
 

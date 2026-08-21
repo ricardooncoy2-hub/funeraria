@@ -1,0 +1,40 @@
+# MariaDB en un compose separado del stack principal (docker-compose.yml en la
+# raíz), a propósito: vida útil independiente (redeployar/reconstruir web/
+# admin/api nunca afecta a este contenedor) y aislamiento de red real — la
+# red `backend` es `internal: true`, sin ruta a internet ni a ninguna otra
+# red, así que MariaDB nunca es alcanzable salvo por lo que se conecte
+# explícitamente a esta red (solo `api`, ver `networks.backend.external` en
+# el docker-compose.yml de la raíz). Ver ADR en
+# docs/34_decisiones_arquitectonicas.md y docs/26_infraestructura.md §26.7.
+#
+# Se despliega en su propia carpeta en el servidor (no en la raíz del repo)
+# para poder vivir en un volumen/ruta de disco elegida por el operador,
+# independiente de dónde esté clonado el repo del stack principal.
+
+services:
+  mariadb:
+    image: mariadb:11.8.8
+    container_name: funeraria-mariadb
+    networks:
+      - backend
+    env_file: .env
+    volumes:
+      - /srv/funeraria/mariadb:/var/lib/mysql
+    # Collation obligatoria del proyecto (ADR-002 / docs/11): NO utf8mb4_0900_ai_ci.
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_uca1400_ai_ci
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  backend:
+    # Nombre fijo y explícito: el stack principal (docker-compose.yml en la
+    # raíz del repo) lo referencia como `external: true` por este mismo
+    # nombre exacto, sin importar el nombre de proyecto de esta carpeta.
+    name: funeraria_backend
+    internal: true

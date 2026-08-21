@@ -9,18 +9,33 @@ concretos para *este* servidor.
 > local se usa MariaDB y Node nativos + `pnpm dev` (ver `docs/26_infraestructura.md` §26.10).
 > No ejecutar este procedimiento en local.
 
-## Estado de partida
+## Topología: dos `docker compose` separados
 
-Ya existe en el servidor:
+MariaDB **no** vive en el `docker-compose.yml` de la raíz del repo — se despliega
+desde su propio compose en `docker/mariadb/docker-compose.yml`, en una carpeta propia
+del servidor (p. ej. `/srv/funeraria/mariadb-stack`), con:
 
+- Vida útil independiente del resto del stack: reconstruir/redeployar
+  `web`/`admin`/`api` nunca reinicia ni recrea este contenedor.
+- Red propia `backend`, declarada `internal: true` — sin ruta a internet ni a
+  ninguna otra red por defecto. El stack principal la referencia como
+  `external: true` por su nombre fijo `funeraria_backend` y conecta *solo*
+  `api` a ella (único servicio que habla con la base de datos).
+
+Ver el ADR correspondiente en `docs/34_decisiones_arquitectonicas.md` y
+`docs/26_infraestructura.md` §26.7.
+
+**Si MariaDB ya está corriendo** (ver `docker ps -a --filter name=funeraria-mariadb`),
+no lo toques — solo confirma en el paso 2 que la red `funeraria_backend` existe con
+ese nombre exacto. Si no está corriendo todavía, este es el primer paso:
+
+```bash
+mkdir -p /srv/funeraria/mariadb-stack && cd /srv/funeraria/mariadb-stack
+# copiar aquí docker/mariadb/docker-compose.yml y docker/mariadb/.env.example del repo
+cp .env.example .env   # completar MARIADB_DATABASE/USER/PASSWORD/ROOT_PASSWORD
+docker compose up -d
+docker compose ps      # confirmar "Up (healthy)"
 ```
-deploy@vmi3262752:/srv/funeraria/stack$ docker compose ps
-NAME                IMAGE            COMMAND                  SERVICE   CREATED         STATUS                   PORTS
-funeraria-mariadb   mariadb:11.8.8   "docker-entrypoint.s…"   mariadb   8 minutes ago   Up 8 minutes (healthy)   3306/tcp
-```
-
-MariaDB corriendo y sano, sin puerto expuesto al host (correcto — nunca debe exponerse
-públicamente). Falta desplegar `web`, `admin`, `api` y `nginx`.
 
 ## Variante: sin dominio, acceso solo por IP
 
@@ -129,7 +144,8 @@ ls apps/web/Dockerfile apps/admin/Dockerfile apps/api/Dockerfile docker-compose.
 
 Si falta algo, el compose se copió suelto — en ese caso lo correcto es clonar el repo
 completo ahí (con `git clone` a una carpeta temporal y mover, o `git init` + remote +
-pull si `stack/` ya tiene datos de MariaDB en un volumen y no se quiere perder).
+pull). Esto no afecta a MariaDB: vive en su propia carpeta con su propio compose (ver
+"Topología" arriba), independiente de dónde esté clonado este repo.
 
 ## 1. Traer/actualizar el código
 
@@ -138,18 +154,24 @@ cd /srv/funeraria/stack
 git pull origin main   # o git clone <repo-url> . si aún no está
 ```
 
-## 2. Confirmar credenciales de MariaDB ya desplegado
+## 2. Confirmar la red hacia MariaDB
 
-**No tocar ni reiniciar el contenedor `mariadb`** — ya está sano. Solo confirmar que
-`.env.mariadb` existe en `/srv/funeraria/stack` (obligatorio para que el
-`env_file: .env.mariadb` del compose no falle si algún día se recrea ese servicio):
+**No tocar ni reiniciar el contenedor `funeraria-mariadb`** — si ya está sano,
+déjalo así. Solo confirmar que la red que el `docker-compose.yml` de la raíz espera
+encontrar (`external: true`, nombre fijo `funeraria_backend`) existe de verdad:
 
 ```bash
-cat .env.mariadb   # debe existir con MARIADB_DATABASE/USER/PASSWORD/ROOT_PASSWORD ya usados al crearlo
+docker network ls | grep funeraria_backend
 ```
 
-Anotar el `MARIADB_USER`/`MARIADB_PASSWORD` reales — se necesitan en el paso 3 para que
-la API pueda autenticarse.
+Si no aparece, el compose de MariaDB (`docker/mariadb/docker-compose.yml`) todavía no
+se desplegó con la red nombrada — revisar la sección "Topología" de arriba antes de
+seguir; `docker compose build`/`up` del stack principal fallará con
+`network funeraria_backend declared as external, but could not be found` si esta red
+no existe todavía.
+
+Anotar el `MARIADB_USER`/`MARIADB_PASSWORD` reales (del `.env` de
+`docker/mariadb/`) — se necesitan en el paso 3 para que la API pueda autenticarse.
 
 ## 3. Crear los `.env.*` que faltan
 
@@ -303,14 +325,12 @@ application successfully started`), sin errores de conexión a `mariadb:3306`.
 El contenedor final de `api` es una imagen de producción sin `ts-node`/`typescript`
 (se podan al hacer `pnpm deploy --prod`), así que **no** se puede correr el seed con
 `docker compose exec api ...` directamente. Usar la etapa `builder` (que sí tiene
-todo) como contenedor descartable, en la misma red que `mariadb`:
+todo) como contenedor descartable, en la red `funeraria_backend` (mismo nombre fijo
+del paso 2 — ahí vive MariaDB):
 
 ```bash
-# nombre de la red que Compose ya creó para este stack:
-docker network ls | grep funeraria
-
 docker build --target builder -f apps/api/Dockerfile -t funeraria-api-builder .
-docker run --rm --network <la-red-de-arriba> --env-file .env.api \
+docker run --rm --network funeraria_backend --env-file .env.api \
   funeraria-api-builder pnpm --filter @funeraria-minaya/api run prisma:seed:run
 ```
 
@@ -335,7 +355,8 @@ confirmar que fuerza cambio de contraseña.
 Documentado como pendiente en `docs/33_roadmap.md` (Fase 8) y no necesario para un
 primer despliegue funcional:
 
-- Backups automatizados de `mariadb_data`.
+- Backups automatizados de `/srv/funeraria/mariadb` (bind mount del volumen de datos,
+  ver `docker/mariadb/docker-compose.yml`).
 - Observabilidad/logging centralizado.
 - Pipeline de CI/CD que construya y despliegue automáticamente (hoy es 100% manual vía
   SSH — no hay GitHub Actions que haga `docker build`/push/deploy).
