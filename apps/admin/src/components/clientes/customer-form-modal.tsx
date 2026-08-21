@@ -87,6 +87,12 @@ export function CustomerFormModal({
       onSuccess();
       onOpenChange(false);
     } catch (error) {
+      if (!(error instanceof ApiError)) {
+        // Error inesperado (no una respuesta de negocio del backend) — se
+        // loguea para poder diagnosticarlo, ya que el mensaje que ve el
+        // usuario es genérico y no alcanza para saber la causa real.
+        console.error("CustomerFormModal onSubmit:", error);
+      }
       const message = error instanceof ApiError ? error.message : "No se pudo guardar el cliente.";
       setError("root", { message });
     }
