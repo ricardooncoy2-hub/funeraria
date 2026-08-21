@@ -12,7 +12,13 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @funeraria-minaya/api exec prisma generate
 RUN pnpm --filter @funeraria-minaya/api run build
+# `pnpm deploy` reconstruye node_modules desde cero en el directorio destino
+# (resolución por lockfile) — no arrastra el cliente de Prisma generado antes
+# por `prisma generate` en /repo, así que hay que regenerarlo DENTRO del
+# propio directorio deployado, o el runner falla con
+# "Cannot find module '.prisma/client/default'".
 RUN pnpm --filter @funeraria-minaya/api deploy --prod --legacy /repo/deploy/api
+RUN cd /repo/deploy/api && node_modules/.bin/prisma generate --schema prisma/schema.prisma
 
 FROM base AS runner
 ENV NODE_ENV=production
